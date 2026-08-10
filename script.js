@@ -170,6 +170,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Back to Top Smooth Scroll
+  document.querySelectorAll('a[href="#top"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+  });
+
   // ==========================================
   // 6. GALLERY RENDERER & LIGHTBOX MODAL
   // ==========================================
