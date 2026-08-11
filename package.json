@@ -1,0 +1,20 @@
+{
+  "name": "akash-verma-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portfolio website of Akash Verma — Developer working across AI/ML, Data Science, and Web Engineering.",
+  "scripts": {
+    "dev": "npx -y serve .",
+    "start": "npx -y serve .",
+    "build": "echo 'Static production files ready.'"
+  },
+  "keywords": [
+    "portfolio",
+    "developer",
+    "ai-ml",
+    "data-science",
+    "web"
+  ],
+  "author": "Akash Verma",
+  "license": "MIT"
+}
