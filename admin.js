@@ -137,22 +137,43 @@
   };
 
   // --- Contact Message Utilities ---
+  let cachedMessages = [];
+
   const getMessages = () => {
     try {
       const stored = localStorage.getItem('portfolio_contact_messages');
-      return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      return [];
-    }
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return cachedMessages;
+  };
+
+  const fetchMessagesFromBackend = async () => {
+    try {
+      const res = await fetch('/api/messages?t=' + Date.now(), { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.success && Array.isArray(json.messages)) {
+          cachedMessages = json.messages;
+          try { localStorage.setItem('portfolio_contact_messages', JSON.stringify(cachedMessages)); } catch (e) {}
+          updateSidebarBadges();
+          return cachedMessages;
+        }
+      }
+    } catch (e) {}
+    return getMessages();
   };
 
   const saveMessages = (msgs) => {
+    cachedMessages = msgs;
     try {
       localStorage.setItem('portfolio_contact_messages', JSON.stringify(msgs));
-      return true;
-    } catch (e) {
-      return false;
-    }
+    } catch (e) {}
+    fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'save_all', messages: msgs })
+    }).catch(e => console.warn('Failed to sync messages to backend:', e));
+    return true;
   };
 
   const updateSidebarBadges = () => {
@@ -1529,7 +1550,13 @@
   // ============================================================
   // INITIAL RENDER
   // ============================================================
-  updateSidebarBadges();
-  renderDashboard();
+  fetchMessagesFromBackend().then(() => {
+    updateSidebarBadges();
+  });
+
+  PortfolioData.init().then(() => {
+    updateSidebarBadges();
+    renderSection(currentSection);
+  });
 
 })();

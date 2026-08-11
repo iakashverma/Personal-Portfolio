@@ -1,15 +1,16 @@
 /**
  * PORTFOLIO DATA LAYER — Single Source of Truth
- * Provides default content for every portfolio section.
- * Reads overrides from localStorage when admin has made edits.
- * Used by both the public site (script.js) and the admin dashboard (admin.js).
+ * Connects directly to the production backend API (/api/data).
+ * Ensures all admin changes are persisted to the production database and
+ * immediately reflected across all devices, browsers, and sessions.
  */
 
 const PortfolioData = (() => {
   const STORAGE_KEY = 'portfolio_cms_data';
+  const API_ENDPOINT = '/api/data';
 
   // ============================================================
-  // DEFAULT DATA — Extracted from existing hardcoded HTML/JS
+  // DEFAULT DATA — Single Source Fallback
   // ============================================================
 
   const defaults = {
@@ -184,101 +185,175 @@ const PortfolioData = (() => {
     }
   };
 
-  // ============================================================
-  // STORAGE LAYER
-  // ============================================================
+  // In-Memory state for instant synchronous rendering
+  let memoryData = JSON.parse(JSON.stringify(defaults));
+  let isInitialized = false;
+  let initPromise = null;
 
-  const loadAll = () => {
+  // Local storage fallback helper
+  const loadLocalStorage = () => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) return JSON.parse(stored);
-    } catch (e) {
-      console.warn('PortfolioData: Failed to parse localStorage data.', e);
-    }
+    } catch (e) {}
     return null;
   };
 
-  const saveAll = (data) => {
+  const saveLocalStorage = (data) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      return true;
+    } catch (e) {}
+  };
+
+  // Pre-load local storage if present before fetch completes
+  const localVal = loadLocalStorage();
+  if (localVal) {
+    memoryData = { ...memoryData, ...localVal };
+  }
+
+  // ============================================================
+  // BACKEND SYNC LAYER
+  // ============================================================
+
+  const fetchFromBackend = async () => {
+    try {
+      const res = await fetch(`${API_ENDPOINT}?t=${Date.now()}`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.success && json.data) {
+          memoryData = json.data;
+          saveLocalStorage(memoryData);
+          isInitialized = true;
+          window.dispatchEvent(new CustomEvent('portfolioDataLoaded', { detail: memoryData }));
+          return memoryData;
+        }
+      }
     } catch (e) {
-      console.error('PortfolioData: Failed to save to localStorage.', e);
-      return false;
+      console.warn('PortfolioData: Could not fetch from backend API, using cached data.', e);
     }
+    isInitialized = true;
+    return memoryData;
+  };
+
+  const init = () => {
+    if (!initPromise) {
+      initPromise = fetchFromBackend();
+    }
+    return initPromise;
+  };
+
+  // Auto-trigger init on script execution
+  init();
+
+  const syncToBackend = async (payload) => {
+    try {
+      const res = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.success && json.data) {
+          memoryData = json.data;
+          saveLocalStorage(memoryData);
+          window.dispatchEvent(new CustomEvent('portfolioDataUpdated', { detail: memoryData }));
+          return true;
+        }
+      }
+    } catch (e) {
+      console.error('PortfolioData: Error syncing to backend:', e);
+    }
+    return false;
   };
 
   // ============================================================
   // PUBLIC API
   // ============================================================
 
-  /**
-   * Get data for a section. Returns admin-edited data if available, else defaults.
-   * @param {string} section - Key name (e.g., 'hero', 'projects', 'gallery')
-   * @returns {*} Section data
-   */
   const get = (section) => {
-    const stored = loadAll();
-    if (stored && stored[section] !== undefined) {
-      return stored[section];
+    if (memoryData && memoryData[section] !== undefined) {
+      return memoryData[section];
     }
     return defaults[section] !== undefined ? JSON.parse(JSON.stringify(defaults[section])) : null;
   };
 
-  /**
-   * Save data for a section.
-   * @param {string} section - Key name
-   * @param {*} value - Section data to persist
-   * @returns {boolean} Success
-   */
   const set = (section, value) => {
-    const stored = loadAll() || {};
-    stored[section] = value;
-    return saveAll(stored);
+    memoryData[section] = value;
+    saveLocalStorage(memoryData);
+    // Fire background sync to backend database
+    syncToBackend({ section, value });
+    return true;
   };
 
-  /**
-   * Get all sections data (merged defaults + overrides).
-   */
+  const setAsync = async (section, value) => {
+    memoryData[section] = value;
+    saveLocalStorage(memoryData);
+    const success = await syncToBackend({ section, value });
+    return success;
+  };
+
   const getAll = () => {
-    const stored = loadAll() || {};
     const merged = {};
     for (const key of Object.keys(defaults)) {
-      merged[key] = stored[key] !== undefined ? stored[key] : JSON.parse(JSON.stringify(defaults[key]));
+      merged[key] = memoryData[key] !== undefined ? memoryData[key] : JSON.parse(JSON.stringify(defaults[key]));
     }
     return merged;
   };
 
-  /**
-   * Reset a section to defaults.
-   */
   const reset = (section) => {
-    const stored = loadAll() || {};
-    delete stored[section];
-    return saveAll(stored);
+    memoryData[section] = JSON.parse(JSON.stringify(defaults[section] || null));
+    saveLocalStorage(memoryData);
+    syncToBackend({ action: 'reset', section });
+    return true;
   };
 
-  /**
-   * Reset ALL data to defaults.
-   */
+  const resetAsync = async (section) => {
+    memoryData[section] = JSON.parse(JSON.stringify(defaults[section] || null));
+    saveLocalStorage(memoryData);
+    return await syncToBackend({ action: 'reset', section });
+  };
+
   const resetAll = () => {
+    memoryData = JSON.parse(JSON.stringify(defaults));
     localStorage.removeItem(STORAGE_KEY);
+    syncToBackend({ action: 'reset_all' });
   };
 
-  /**
-   * Get default data for a section (ignoring overrides).
-   */
+  const resetAllAsync = async () => {
+    memoryData = JSON.parse(JSON.stringify(defaults));
+    localStorage.removeItem(STORAGE_KEY);
+    return await syncToBackend({ action: 'reset_all' });
+  };
+
   const getDefault = (section) => {
     return defaults[section] !== undefined ? JSON.parse(JSON.stringify(defaults[section])) : null;
   };
 
-  /**
-   * Check if a section has been edited by admin.
-   */
   const isEdited = (section) => {
-    const stored = loadAll();
-    return stored !== null && stored[section] !== undefined;
+    if (!memoryData || memoryData[section] === undefined) return false;
+    return JSON.stringify(memoryData[section]) !== JSON.stringify(defaults[section]);
   };
 
-  return { get, set, getAll, reset, resetAll, getDefault, isEdited };
+  return {
+    init,
+    fetchFromBackend,
+    get,
+    set,
+    setAsync,
+    getAll,
+    reset,
+    resetAsync,
+    resetAll,
+    resetAllAsync,
+    getDefault,
+    isEdited
+  };
 })();

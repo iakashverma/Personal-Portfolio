@@ -135,248 +135,259 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 1.5. DYNAMIC CMS CONTENT RENDERER
   // ==========================================
+  const renderCMSContent = () => {
+    if (typeof PortfolioData !== 'undefined') {
+      const data = PortfolioData.getAll();
+
+      // --- Hero ---
+      const heroBadge = document.querySelector('.hero-badge');
+      if (heroBadge && data.hero.badge) {
+        heroBadge.innerHTML = `<span class="status-dot interactive"></span>${data.hero.badge}`;
+      }
+      const heroHeadline = document.querySelector('.hero-headline');
+      if (heroHeadline && data.hero.headline) {
+        heroHeadline.innerHTML = data.hero.headline;
+      }
+      const heroLead = document.querySelector('.hero-lead');
+      if (heroLead && data.hero.lead) {
+        heroLead.textContent = data.hero.lead;
+      }
+
+      // --- About ---
+      const aboutTitle = document.querySelector('#about .card-section-title');
+      if (aboutTitle && data.about.title) aboutTitle.textContent = data.about.title;
+      const aboutSub = document.querySelector('#about .card-section-sub');
+      if (aboutSub && data.about.subtitle) aboutSub.textContent = data.about.subtitle;
+
+      const aboutProfileImg = document.getElementById('about-profile-img');
+      const aboutProfileWrapper = document.getElementById('about-profile-wrapper');
+      if (aboutProfileImg && aboutProfileWrapper) {
+        if (data.about.profileImage) {
+          aboutProfileImg.src = data.about.profileImage;
+          aboutProfileWrapper.style.display = 'block';
+        } else {
+          aboutProfileWrapper.style.display = 'none';
+        }
+      }
+
+      if (data.about.bio && data.about.bio.length) {
+        const bioParas = document.querySelectorAll('.about-bio p');
+        data.about.bio.forEach((pText, i) => {
+          if (bioParas[i]) bioParas[i].textContent = pText;
+        });
+      }
+
+      // --- Projects (Max 6 + Show More toggle) ---
+      const projectsGrid = document.querySelector('#fieldlog .card-grid');
+      const projectsContainer = document.querySelector('#fieldlog .container');
+      if (projectsGrid && data.projects.items && projectsContainer) {
+        const enabledProjects = data.projects.items.filter(p => p.enabled !== false);
+        if (enabledProjects.length) {
+          projectsGrid.innerHTML = enabledProjects.map((p, index) => `
+            <article class="feature-card project-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
+              <div class="feature-card-icon">
+                <i class="${p.icon || 'fas fa-cube'}"></i>
+              </div>
+              <h3 class="feature-card-title">${escHTML(p.title)}</h3>
+              <p class="feature-card-desc">${escHTML(p.description)}</p>
+              <div class="project-actions">
+                ${p.githubUrl ? `<a href="${escHTML(p.githubUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">GitHub</a>` : ''}
+                ${p.demoUrl ? `<a href="${escHTML(p.demoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>` : ''}
+                ${p.domain ? `<span class="btn-project-pill project-domain-pill">${escHTML(p.domain)}</span>` : ''}
+              </div>
+            </article>
+          `).join('');
+
+          // Clean up previous toggle container if any
+          const oldProjectToggle = projectsContainer.querySelector('.section-toggle-wrapper[data-for="projects"]');
+          if (oldProjectToggle) oldProjectToggle.remove();
+
+          if (enabledProjects.length > 6) {
+            const toggleWrap = document.createElement('div');
+            toggleWrap.className = 'section-toggle-wrapper';
+            toggleWrap.setAttribute('data-for', 'projects');
+            toggleWrap.innerHTML = `
+              <button type="button" class="btn-show-toggle">
+                <span>Show More</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+            `;
+            projectsContainer.appendChild(toggleWrap);
+
+            const toggleBtn = toggleWrap.querySelector('.btn-show-toggle');
+            let isExpanded = false;
+
+            toggleBtn.addEventListener('click', () => {
+              isExpanded = !isExpanded;
+              const extraCards = projectsGrid.querySelectorAll('.project-card.is-hidden-card');
+              extraCards.forEach(card => {
+                card.classList.toggle('is-visible-card', isExpanded);
+              });
+              toggleBtn.querySelector('span').textContent = isExpanded ? 'Show Less' : 'Show More';
+              toggleBtn.querySelector('i').className = isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+            });
+          }
+        }
+      }
+
+      // --- Skills ---
+      const skillsGrid = document.querySelector('#stack .skills-grid');
+      if (skillsGrid && data.skills.categories) {
+        const enabledSkills = data.skills.categories.filter(s => s.enabled !== false);
+        if (enabledSkills.length) {
+          skillsGrid.innerHTML = enabledSkills.map(s => `
+            <div class="skills-card" tabindex="0">
+              <div class="skills-card-header">
+                <i class="${s.icon || 'fas fa-code'}"></i>
+                <h3>${escHTML(s.name)}</h3>
+              </div>
+              <div class="skills-tags">
+                ${(s.tags || []).map(t => `<span class="skill-tag">${escHTML(t)}</span>`).join('')}
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+
+      // --- Education ---
+      const eduGrid = document.querySelector('#education .timeline-grid');
+      if (eduGrid && data.education.items) {
+        const enabledEdu = data.education.items.filter(e => e.enabled !== false);
+        if (enabledEdu.length) {
+          eduGrid.innerHTML = enabledEdu.map(e => `
+            <div class="timeline-card" tabindex="0">
+              <div class="timeline-card-top">
+                <div class="timeline-icon">
+                  <i class="${e.icon || 'fas fa-graduation-cap'}"></i>
+                </div>
+                <span class="timeline-badge">${escHTML(e.badge)}</span>
+              </div>
+              <div class="timeline-body">
+                <div class="timeline-header">
+                  <h3 class="timeline-degree">${escHTML(e.degree)}</h3>
+                  <span class="timeline-level">${escHTML(e.level)}</span>
+                  <span class="timeline-org">${escHTML(e.org)}</span>
+                </div>
+                <p class="timeline-desc">${escHTML(e.description)}</p>
+                <div class="timeline-highlights">
+                  ${(e.highlights || []).map(h => `<span class="highlight-tag mono"><i class="fas fa-check"></i> ${escHTML(h)}</span>`).join('')}
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+
+      // --- Certifications (Max 6 + Show More toggle) ---
+      const certsGrid = document.querySelector('#certifications .card-grid');
+      const certsContainer = document.querySelector('#certifications .container');
+      if (certsGrid && data.certifications.items && certsContainer) {
+        const enabledCerts = data.certifications.items.filter(c => c.enabled !== false);
+        if (enabledCerts.length) {
+          certsGrid.innerHTML = enabledCerts.map((c, index) => `
+            <article class="feature-card cert-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
+              <div class="feature-card-icon">
+                <i class="${c.icon || 'fas fa-certificate'}"></i>
+              </div>
+              <h3 class="feature-card-title">${escHTML(c.title)}</h3>
+              <p class="feature-card-desc">${escHTML(c.description)}</p>
+              <a href="${escHTML(c.url || '#')}" target="_blank" rel="noopener noreferrer" class="btn-view-cert">
+                <span>View Certificate</span>
+                <span class="cert-arrow">→</span>
+              </a>
+            </article>
+          `).join('');
+
+          // Clean up previous toggle container if any
+          const oldCertToggle = certsContainer.querySelector('.section-toggle-wrapper[data-for="certifications"]');
+          if (oldCertToggle) oldCertToggle.remove();
+
+          if (enabledCerts.length > 6) {
+            const toggleWrap = document.createElement('div');
+            toggleWrap.className = 'section-toggle-wrapper';
+            toggleWrap.setAttribute('data-for', 'certifications');
+            toggleWrap.innerHTML = `
+              <button type="button" class="btn-show-toggle">
+                <span>Show More</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+            `;
+            certsContainer.appendChild(toggleWrap);
+
+            const toggleBtn = toggleWrap.querySelector('.btn-show-toggle');
+            let isExpanded = false;
+
+            toggleBtn.addEventListener('click', () => {
+              isExpanded = !isExpanded;
+              const extraCards = certsGrid.querySelectorAll('.cert-card.is-hidden-card');
+              extraCards.forEach(card => {
+                card.classList.toggle('is-visible-card', isExpanded);
+              });
+              toggleBtn.querySelector('span').textContent = isExpanded ? 'Show Less' : 'Show More';
+              toggleBtn.querySelector('i').className = isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+            });
+          }
+        }
+      }
+
+      // --- Social Icons & Links Resolver ---
+      const getPlatformIcon = (platformName, url, customIcon) => {
+        const name = (platformName || '').toLowerCase();
+        const link = (url || '').toLowerCase();
+        
+        if (name.includes('whatsapp') || link.includes('wa.me') || link.includes('whatsapp.com')) return 'fab fa-whatsapp';
+        if (name.includes('telegram') || link.includes('t.me') || link.includes('telegram.org')) return 'fab fa-telegram-plane';
+        if (name.includes('email') || name.includes('mail') || link.startsWith('mailto:')) return 'fas fa-envelope';
+        if (name.includes('linkedin') || link.includes('linkedin.com')) return 'fab fa-linkedin-in';
+        if (name.includes('instagram') || link.includes('instagram.com')) return 'fab fa-instagram';
+        if (name.includes('github') || link.includes('github.com')) return 'fab fa-github';
+        if (name.includes('leetcode') || link.includes('leetcode.com')) return 'fas fa-code';
+        if (name.includes('geeksforgeeks') || name.includes('gfg') || link.includes('geeksforgeeks.org')) return 'fas fa-terminal';
+        if (name.includes('hackerrank') || link.includes('hackerrank.com')) return 'fab fa-hackerrank';
+        if (name.includes('facebook') || link.includes('facebook.com')) return 'fab fa-facebook-f';
+        if (name.includes('twitter') || name.includes('x.com') || link.includes('twitter.com') || link.includes('x.com')) return 'fab fa-x-twitter';
+        if (name.includes('youtube') || link.includes('youtube.com')) return 'fab fa-youtube';
+        
+        if (customIcon && customIcon !== 'fas fa-link') return customIcon;
+        return 'fas fa-link';
+      };
+
+      // --- Contact Quick Links ---
+      const connectQuickLinks = document.querySelector('.connect-quick-links');
+      if (connectQuickLinks && data.contact.socialLinks) {
+        connectQuickLinks.innerHTML = data.contact.socialLinks.map(link => {
+          const iconClass = getPlatformIcon(link.platform, link.url, link.icon);
+          const isMail = (link.url || '').startsWith('mailto:');
+          return `<a href="${link.url}" ${isMail ? '' : 'target="_blank" rel="noopener noreferrer"'} class="btn btn-secondary btn-icon-only" title="${link.platform}" aria-label="${link.platform}"><i class="${iconClass}"></i></a>`;
+        }).join('');
+      }
+
+      // --- Footer ---
+      const footerDesc = document.querySelector('.footer-description');
+      if (footerDesc && data.footer.description) footerDesc.textContent = data.footer.description;
+      
+      const footerCopySpan = document.querySelector('.footer-copyright span:not(.license-tag)');
+      if (footerCopySpan && data.footer.copyright) footerCopySpan.textContent = data.footer.copyright;
+
+      const footerSocials = document.querySelector('.footer-socials');
+      if (footerSocials && data.footer.socialLinks) {
+        footerSocials.innerHTML = data.footer.socialLinks.map(link => {
+          const iconClass = getPlatformIcon(link.platform, link.url, link.icon);
+          const isMail = (link.url || '').startsWith('mailto:');
+          return `<a href="${link.url}" ${isMail ? '' : 'target="_blank" rel="noopener noreferrer"'} aria-label="${link.platform}" class="footer-social-btn"><i class="${iconClass}"></i></a>`;
+        }).join('');
+      }
+    }
+  };
+
+  renderCMSContent();
+
   if (typeof PortfolioData !== 'undefined') {
-    const data = PortfolioData.getAll();
-
-    // --- Hero ---
-    const heroBadge = document.querySelector('.hero-badge');
-    if (heroBadge && data.hero.badge) {
-      heroBadge.innerHTML = `<span class="status-dot interactive"></span>${data.hero.badge}`;
-    }
-    const heroHeadline = document.querySelector('.hero-headline');
-    if (heroHeadline && data.hero.headline) {
-      heroHeadline.innerHTML = data.hero.headline;
-    }
-    const heroLead = document.querySelector('.hero-lead');
-    if (heroLead && data.hero.lead) {
-      heroLead.textContent = data.hero.lead;
-    }
-
-    // --- About ---
-    const aboutTitle = document.querySelector('#about .card-section-title');
-    if (aboutTitle && data.about.title) aboutTitle.textContent = data.about.title;
-    const aboutSub = document.querySelector('#about .card-section-sub');
-    if (aboutSub && data.about.subtitle) aboutSub.textContent = data.about.subtitle;
-
-    const aboutProfileImg = document.getElementById('about-profile-img');
-    const aboutProfileWrapper = document.getElementById('about-profile-wrapper');
-    if (aboutProfileImg && aboutProfileWrapper) {
-      if (data.about.profileImage) {
-        aboutProfileImg.src = data.about.profileImage;
-        aboutProfileWrapper.style.display = 'block';
-      } else {
-        aboutProfileWrapper.style.display = 'none';
-      }
-    }
-
-    if (data.about.bio && data.about.bio.length) {
-      const bioParas = document.querySelectorAll('.about-bio p');
-      data.about.bio.forEach((pText, i) => {
-        if (bioParas[i]) bioParas[i].textContent = pText;
-      });
-    }
-
-    // --- Projects (Max 6 + Show More toggle) ---
-    const projectsGrid = document.querySelector('#fieldlog .card-grid');
-    const projectsContainer = document.querySelector('#fieldlog .container');
-    if (projectsGrid && data.projects.items && projectsContainer) {
-      const enabledProjects = data.projects.items.filter(p => p.enabled !== false);
-      if (enabledProjects.length) {
-        projectsGrid.innerHTML = enabledProjects.map((p, index) => `
-          <article class="feature-card project-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
-            <div class="feature-card-icon">
-              <i class="${p.icon || 'fas fa-cube'}"></i>
-            </div>
-            <h3 class="feature-card-title">${escHTML(p.title)}</h3>
-            <p class="feature-card-desc">${escHTML(p.description)}</p>
-            <div class="project-actions">
-              ${p.githubUrl ? `<a href="${escHTML(p.githubUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">GitHub</a>` : ''}
-              ${p.demoUrl ? `<a href="${escHTML(p.demoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>` : ''}
-              ${p.domain ? `<span class="btn-project-pill project-domain-pill">${escHTML(p.domain)}</span>` : ''}
-            </div>
-          </article>
-        `).join('');
-
-        // Clean up previous toggle container if any
-        const oldProjectToggle = projectsContainer.querySelector('.section-toggle-wrapper[data-for="projects"]');
-        if (oldProjectToggle) oldProjectToggle.remove();
-
-        if (enabledProjects.length > 6) {
-          const toggleWrap = document.createElement('div');
-          toggleWrap.className = 'section-toggle-wrapper';
-          toggleWrap.setAttribute('data-for', 'projects');
-          toggleWrap.innerHTML = `
-            <button type="button" class="btn-show-toggle">
-              <span>Show More</span>
-              <i class="fas fa-chevron-down"></i>
-            </button>
-          `;
-          projectsContainer.appendChild(toggleWrap);
-
-          const toggleBtn = toggleWrap.querySelector('.btn-show-toggle');
-          let isExpanded = false;
-
-          toggleBtn.addEventListener('click', () => {
-            isExpanded = !isExpanded;
-            const extraCards = projectsGrid.querySelectorAll('.project-card.is-hidden-card');
-            extraCards.forEach(card => {
-              card.classList.toggle('is-visible-card', isExpanded);
-            });
-            toggleBtn.querySelector('span').textContent = isExpanded ? 'Show Less' : 'Show More';
-            toggleBtn.querySelector('i').className = isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
-          });
-        }
-      }
-    }
-
-    // --- Skills ---
-    const skillsGrid = document.querySelector('#stack .skills-grid');
-    if (skillsGrid && data.skills.categories) {
-      const enabledSkills = data.skills.categories.filter(s => s.enabled !== false);
-      if (enabledSkills.length) {
-        skillsGrid.innerHTML = enabledSkills.map(s => `
-          <div class="skills-card" tabindex="0">
-            <div class="skills-card-header">
-              <i class="${s.icon || 'fas fa-code'}"></i>
-              <h3>${escHTML(s.name)}</h3>
-            </div>
-            <div class="skills-tags">
-              ${(s.tags || []).map(t => `<span class="skill-tag">${escHTML(t)}</span>`).join('')}
-            </div>
-          </div>
-        `).join('');
-      }
-    }
-
-    // --- Education ---
-    const eduGrid = document.querySelector('#education .timeline-grid');
-    if (eduGrid && data.education.items) {
-      const enabledEdu = data.education.items.filter(e => e.enabled !== false);
-      if (enabledEdu.length) {
-        eduGrid.innerHTML = enabledEdu.map(e => `
-          <div class="timeline-card" tabindex="0">
-            <div class="timeline-card-top">
-              <div class="timeline-icon">
-                <i class="${e.icon || 'fas fa-graduation-cap'}"></i>
-              </div>
-              <span class="timeline-badge">${escHTML(e.badge)}</span>
-            </div>
-            <div class="timeline-body">
-              <div class="timeline-header">
-                <h3 class="timeline-degree">${escHTML(e.degree)}</h3>
-                <span class="timeline-level">${escHTML(e.level)}</span>
-                <span class="timeline-org">${escHTML(e.org)}</span>
-              </div>
-              <p class="timeline-desc">${escHTML(e.description)}</p>
-              <div class="timeline-highlights">
-                ${(e.highlights || []).map(h => `<span class="highlight-tag mono"><i class="fas fa-check"></i> ${escHTML(h)}</span>`).join('')}
-              </div>
-            </div>
-          </div>
-        `).join('');
-      }
-    }
-
-    // --- Certifications (Max 6 + Show More toggle) ---
-    const certsGrid = document.querySelector('#certifications .card-grid');
-    const certsContainer = document.querySelector('#certifications .container');
-    if (certsGrid && data.certifications.items && certsContainer) {
-      const enabledCerts = data.certifications.items.filter(c => c.enabled !== false);
-      if (enabledCerts.length) {
-        certsGrid.innerHTML = enabledCerts.map((c, index) => `
-          <article class="feature-card cert-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
-            <div class="feature-card-icon">
-              <i class="${c.icon || 'fas fa-certificate'}"></i>
-            </div>
-            <h3 class="feature-card-title">${escHTML(c.title)}</h3>
-            <p class="feature-card-desc">${escHTML(c.description)}</p>
-            <a href="${escHTML(c.url || '#')}" target="_blank" rel="noopener noreferrer" class="btn-view-cert">
-              <span>View Certificate</span>
-              <span class="cert-arrow">→</span>
-            </a>
-          </article>
-        `).join('');
-
-        // Clean up previous toggle container if any
-        const oldCertToggle = certsContainer.querySelector('.section-toggle-wrapper[data-for="certifications"]');
-        if (oldCertToggle) oldCertToggle.remove();
-
-        if (enabledCerts.length > 6) {
-          const toggleWrap = document.createElement('div');
-          toggleWrap.className = 'section-toggle-wrapper';
-          toggleWrap.setAttribute('data-for', 'certifications');
-          toggleWrap.innerHTML = `
-            <button type="button" class="btn-show-toggle">
-              <span>Show More</span>
-              <i class="fas fa-chevron-down"></i>
-            </button>
-          `;
-          certsContainer.appendChild(toggleWrap);
-
-          const toggleBtn = toggleWrap.querySelector('.btn-show-toggle');
-          let isExpanded = false;
-
-          toggleBtn.addEventListener('click', () => {
-            isExpanded = !isExpanded;
-            const extraCards = certsGrid.querySelectorAll('.cert-card.is-hidden-card');
-            extraCards.forEach(card => {
-              card.classList.toggle('is-visible-card', isExpanded);
-            });
-            toggleBtn.querySelector('span').textContent = isExpanded ? 'Show Less' : 'Show More';
-            toggleBtn.querySelector('i').className = isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
-          });
-        }
-      }
-    }
-
-    // --- Social Icons & Links Resolver ---
-    const getPlatformIcon = (platformName, url, customIcon) => {
-      const name = (platformName || '').toLowerCase();
-      const link = (url || '').toLowerCase();
-      
-      if (name.includes('whatsapp') || link.includes('wa.me') || link.includes('whatsapp.com')) return 'fab fa-whatsapp';
-      if (name.includes('telegram') || link.includes('t.me') || link.includes('telegram.org')) return 'fab fa-telegram-plane';
-      if (name.includes('email') || name.includes('mail') || link.startsWith('mailto:')) return 'fas fa-envelope';
-      if (name.includes('linkedin') || link.includes('linkedin.com')) return 'fab fa-linkedin-in';
-      if (name.includes('instagram') || link.includes('instagram.com')) return 'fab fa-instagram';
-      if (name.includes('github') || link.includes('github.com')) return 'fab fa-github';
-      if (name.includes('leetcode') || link.includes('leetcode.com')) return 'fas fa-code';
-      if (name.includes('geeksforgeeks') || name.includes('gfg') || link.includes('geeksforgeeks.org')) return 'fas fa-terminal';
-      if (name.includes('hackerrank') || link.includes('hackerrank.com')) return 'fab fa-hackerrank';
-      if (name.includes('facebook') || link.includes('facebook.com')) return 'fab fa-facebook-f';
-      if (name.includes('twitter') || name.includes('x.com') || link.includes('twitter.com') || link.includes('x.com')) return 'fab fa-x-twitter';
-      if (name.includes('youtube') || link.includes('youtube.com')) return 'fab fa-youtube';
-      
-      if (customIcon && customIcon !== 'fas fa-link') return customIcon;
-      return 'fas fa-link';
-    };
-
-    // --- Contact Quick Links ---
-    const connectQuickLinks = document.querySelector('.connect-quick-links');
-    if (connectQuickLinks && data.contact.socialLinks) {
-      connectQuickLinks.innerHTML = data.contact.socialLinks.map(link => {
-        const iconClass = getPlatformIcon(link.platform, link.url, link.icon);
-        const isMail = (link.url || '').startsWith('mailto:');
-        return `<a href="${link.url}" ${isMail ? '' : 'target="_blank" rel="noopener noreferrer"'} class="btn btn-secondary btn-icon-only" title="${link.platform}" aria-label="${link.platform}"><i class="${iconClass}"></i></a>`;
-      }).join('');
-    }
-
-    // --- Footer ---
-    const footerDesc = document.querySelector('.footer-description');
-    if (footerDesc && data.footer.description) footerDesc.textContent = data.footer.description;
-    
-    const footerCopySpan = document.querySelector('.footer-copyright span:not(.license-tag)');
-    if (footerCopySpan && data.footer.copyright) footerCopySpan.textContent = data.footer.copyright;
-
-    const footerSocials = document.querySelector('.footer-socials');
-    if (footerSocials && data.footer.socialLinks) {
-      footerSocials.innerHTML = data.footer.socialLinks.map(link => {
-        const iconClass = getPlatformIcon(link.platform, link.url, link.icon);
-        const isMail = (link.url || '').startsWith('mailto:');
-        return `<a href="${link.url}" ${isMail ? '' : 'target="_blank" rel="noopener noreferrer"'} aria-label="${link.platform}" class="footer-social-btn"><i class="${iconClass}"></i></a>`;
-      }).join('');
-    }
+    PortfolioData.init().then(() => renderCMSContent());
   }
+
+  window.addEventListener('portfolioDataLoaded', () => renderCMSContent());
+  window.addEventListener('portfolioDataUpdated', () => renderCMSContent());
 
   // ==========================================
   // 2. HEADER SCROLL STATE
@@ -752,8 +763,14 @@ document.addEventListener('DOMContentLoaded', () => {
         emailDelivered: false
       };
 
-      // 1. Guaranteed storage in Admin Panel local data layer first
+      // 1. Guaranteed storage in central backend API and local data layer
       try {
+        fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newMessage)
+        }).catch(e => console.warn('Could not post message to backend API:', e));
+
         const storedMsgs = JSON.parse(localStorage.getItem('portfolio_contact_messages') || '[]');
         storedMsgs.unshift(newMessage);
         localStorage.setItem('portfolio_contact_messages', JSON.stringify(storedMsgs));
