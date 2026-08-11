@@ -155,12 +155,28 @@
     }
   };
 
+  const updateSidebarBadges = () => {
+    const messages = getMessages();
+    const unreadCount = messages.filter(m => !m.read).length;
+    const badgeEl = document.getElementById('sidebar-inbox-badge');
+    if (badgeEl) {
+      if (unreadCount > 0) {
+        badgeEl.textContent = unreadCount;
+        badgeEl.style.display = 'inline-block';
+      } else {
+        badgeEl.style.display = 'none';
+      }
+    }
+  };
+
   // ============================================================
   // RENDER SECTION — Router
   // ============================================================
   const renderSection = (section) => {
+    updateSidebarBadges();
     switch (section) {
       case 'dashboard': renderDashboard(); break;
+      case 'messages': renderMessages(); break;
       case 'hero': renderHero(); break;
       case 'about': renderAbout(); break;
       case 'projects': renderListSection('projects'); break;
@@ -283,6 +299,131 @@
         PortfolioData.resetAll();
         renderDashboard();
         showToast('All content reset to defaults.');
+      });
+    });
+  };
+
+  // ============================================================
+  // MESSAGES INBOX VIEW
+  // ============================================================
+  const renderMessages = () => {
+    const messages = getMessages();
+    const unreadCount = messages.filter(m => !m.read).length;
+
+    mainEl.innerHTML = `
+      <div class="admin-main-header">
+        <div>
+          <h1 class="admin-page-title">Messages Inbox</h1>
+          <p class="admin-page-subtitle">View, reply to, and manage contact inquiries sent through your portfolio website.</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          ${messages.length > 0 ? `
+            <button class="btn-admin btn-cancel" id="mark-all-read-btn"><i class="fas fa-check-double"></i> Mark All Read</button>
+            <button class="btn-admin btn-danger" id="clear-all-msgs-btn"><i class="fas fa-trash-alt"></i> Clear All</button>
+          ` : ''}
+        </div>
+      </div>
+
+      <div class="editor-card">
+        <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="editor-card-title"><i class="fas fa-inbox" style="margin-right:8px;color:var(--status-green);"></i>All Received Inquiries (${messages.length} total, ${unreadCount} unread)</span>
+        </div>
+        <div class="editor-card-body">
+          ${messages.length === 0 ? `
+            <div style="text-align:center;padding:48px 16px;color:var(--text-muted);">
+              <i class="fas fa-inbox" style="font-size:36px;margin-bottom:12px;opacity:0.3;"></i>
+              <p style="margin:0;font-size:15px;font-weight:600;color:var(--text-primary);">Your inbox is empty.</p>
+              <p style="margin:6px 0 0 0;font-size:13px;opacity:0.7;">When visitors submit your portfolio contact form, their messages will appear here and notify iakashverma00@gmail.com.</p>
+            </div>
+          ` : `
+            <div class="editor-list" id="inbox-list">
+              ${messages.map((m, i) => `
+                <div class="editor-list-item" style="${!m.read ? 'border-left:3px solid var(--status-green);background:rgba(16,185,129,0.03);' : ''}">
+                  <div class="editor-list-item-content">
+                    <div class="editor-list-item-title">
+                      ${!m.read ? '<span class="msg-unread-dot" title="Unread Message"></span>' : ''}
+                      ${esc(m.name)} 
+                      <span style="font-weight:400;font-size:12px;color:var(--text-muted);margin-left:6px;">&lt;${esc(m.email)}&gt;</span>
+                      ${m.emailDelivered ? '<span style="margin-left:8px;font-size:11px;color:var(--status-green);font-family:var(--font-mono);"><i class="fas fa-paper-plane"></i> Email Relayed</span>' : ''}
+                    </div>
+                    <div class="editor-list-item-sub">
+                      <strong>${esc(m.subject)}</strong> — ${esc((m.message || '').substring(0, 95))}${m.message && m.message.length > 95 ? '...' : ''}
+                      <span style="opacity:0.6;margin-left:10px;font-family:var(--font-mono);">${esc(m.date || '')}</span>
+                    </div>
+                  </div>
+                  <div class="editor-list-item-actions">
+                    <button class="item-action-btn view-inbox-msg" title="View & Reply" data-idx="${i}"><i class="fas fa-eye"></i></button>
+                    <a href="mailto:${esc(m.email)}?subject=Re: ${encodeURIComponent(m.subject || '')}" class="item-action-btn" title="Direct Email Reply" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;"><i class="fas fa-reply"></i></a>
+                    <button class="item-action-btn delete-btn del-inbox-msg" title="Delete" data-idx="${i}"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+
+    // Bind Inbox Handlers
+    document.querySelectorAll('.view-inbox-msg').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        const msg = messages[idx];
+        if (msg) {
+          msg.read = true;
+          saveMessages(messages);
+          updateSidebarBadges();
+
+          showEditModal(`Message from ${msg.name}`, `
+            <div class="field-row">
+              <div class="field-group"><label class="field-label">Sender Name</label><input type="text" class="field-input" readonly value="${esc(msg.name)}"></div>
+              <div class="field-group"><label class="field-label">Email Address</label><input type="text" class="field-input" readonly value="${esc(msg.email)}"></div>
+            </div>
+            <div class="field-row">
+              <div class="field-group"><label class="field-label">Received At</label><input type="text" class="field-input" readonly value="${esc(msg.date || 'Recent')}"></div>
+              <div class="field-group"><label class="field-label">Subject</label><input type="text" class="field-input" readonly value="${esc(msg.subject)}"></div>
+            </div>
+            <div class="field-group"><label class="field-label">Message Content</label><textarea class="field-textarea" rows="7" readonly>${esc(msg.message)}</textarea></div>
+            <div style="margin-top:14px;display:flex;gap:10px;">
+              <a href="mailto:${esc(msg.email)}?subject=Re: ${encodeURIComponent(msg.subject || '')}&body=Hi ${encodeURIComponent(msg.name)},%0D%0A%0D%0AThank you for reaching out.%0D%0A%0D%0A" class="btn-admin btn-save" style="text-decoration:none;display:inline-flex;align-items:center;gap:8px;">
+                <i class="fas fa-paper-plane"></i> Reply via Email Client
+              </a>
+            </div>
+          `, () => {
+            closeEditModal();
+            renderMessages();
+          });
+        }
+      });
+    });
+
+    document.querySelectorAll('.del-inbox-msg').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        showConfirm('Delete Message?', 'This message will be permanently removed from your inbox.', () => {
+          messages.splice(idx, 1);
+          saveMessages(messages);
+          updateSidebarBadges();
+          renderMessages();
+          showToast('Message deleted.');
+        });
+      });
+    });
+
+    document.getElementById('mark-all-read-btn')?.addEventListener('click', () => {
+      messages.forEach(m => m.read = true);
+      saveMessages(messages);
+      updateSidebarBadges();
+      renderMessages();
+      showToast('All messages marked as read.');
+    });
+
+    document.getElementById('clear-all-msgs-btn')?.addEventListener('click', () => {
+      showConfirm('Clear All Messages?', 'All received contact messages will be permanently deleted.', () => {
+        saveMessages([]);
+        updateSidebarBadges();
+        renderMessages();
+        showToast('All messages cleared.');
       });
     });
   };
@@ -1142,13 +1283,35 @@
           <div class="field-group"><label class="field-label">Map Embed URL</label><input type="text" class="field-input" id="ct-mapembed" value="${esc(data.mapEmbedUrl)}"></div>
           <div class="field-group"><label class="field-label">Map External Link</label><input type="text" class="field-input" id="ct-maplink" value="${esc(data.mapLink)}"></div>
         </div>
-        <div class="editor-card-footer">
-          <button class="btn-admin btn-cancel" id="ct-reset">Reset to Default</button>
-          <button class="btn-admin btn-save" id="ct-save"><i class="fas fa-check"></i> Save Changes</button>
-        </div>
       </div>
 
       <div class="editor-card">
+        <div class="editor-card-header"><span class="editor-card-title">Contact Redirect Links (${(data.socialLinks || []).length})</span></div>
+        <div class="editor-card-body">
+          <div class="editor-list" id="ct-links">
+            ${(data.socialLinks || []).map((l, i) => `
+              <div class="editor-list-item">
+                <div class="editor-list-item-content">
+                  <div class="editor-list-item-title"><i class="${l.icon}" style="margin-right:6px;opacity:0.5;"></i>${esc(l.platform)}</div>
+                  <div class="editor-list-item-sub">${esc(l.url)}</div>
+                </div>
+                <div class="editor-list-item-actions">
+                  <button class="item-action-btn" title="Edit" data-action="edit-ct-link" data-i="${i}"><i class="fas fa-pen"></i></button>
+                  <button class="item-action-btn delete-btn" title="Delete" data-action="delete-ct-link" data-i="${i}"><i class="fas fa-trash-alt"></i></button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <button class="btn-admin btn-add" id="ct-add-link" style="margin-top:14px;"><i class="fas fa-plus"></i> Add Redirect Link</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
+        <button class="btn-admin btn-cancel" id="ct-reset">Reset to Default</button>
+        <button class="btn-admin btn-save" id="ct-save"><i class="fas fa-check"></i> Save Changes</button>
+      </div>
+
+      <div class="editor-card" style="margin-top:24px;">
         <div class="editor-card-header">
           <span class="editor-card-title"><i class="fas fa-inbox" style="margin-right:8px;color:var(--status-green);"></i>Received Messages (${messages.length})</span>
         </div>
@@ -1173,20 +1336,58 @@
       </div>
     `;
 
-    document.getElementById('ct-save').addEventListener('click', () => {
-      const updated = {
-        title: document.getElementById('ct-title').value.trim(),
-        subtitle: document.getElementById('ct-subtitle').value.trim(),
-        email: document.getElementById('ct-email').value.trim(),
-        socialLinks: data.socialLinks,
-        mapTitle: document.getElementById('ct-maptitle').value.trim(),
-        mapLocation: document.getElementById('ct-maploc').value.trim(),
-        mapEmbedUrl: document.getElementById('ct-mapembed').value.trim(),
-        mapLink: document.getElementById('ct-maplink').value.trim()
-      };
-      PortfolioData.set('contact', updated);
-      showToast('Contact section saved.');
+    document.querySelectorAll('#ct-links .item-action-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.i);
+        if (btn.dataset.action === 'delete-ct-link') {
+          showConfirm(`Delete "${data.socialLinks[idx].platform}"?`, 'Link will be removed.', () => {
+            data.socialLinks.splice(idx, 1);
+            saveCt();
+            showToast('Link deleted.');
+          });
+        } else if (btn.dataset.action === 'edit-ct-link') {
+          editCtLink(idx);
+        }
+      });
+    });
+
+    document.getElementById('ct-add-link')?.addEventListener('click', () => {
+      if (!data.socialLinks) data.socialLinks = [];
+      data.socialLinks.push({ platform: 'New Link', url: 'https://example.com', icon: 'fas fa-link' });
+      editCtLink(data.socialLinks.length - 1);
+    });
+
+    const editCtLink = (idx) => {
+      const l = data.socialLinks[idx];
+      showEditModal('Edit Contact Link', `
+        <div class="field-group"><label class="field-label">Platform</label><input type="text" class="field-input" id="modal-clplatform" value="${esc(l.platform)}"></div>
+        <div class="field-group"><label class="field-label">URL</label><input type="text" class="field-input" id="modal-clurl" value="${esc(l.url)}"></div>
+        <div class="field-group"><label class="field-label">Icon Class</label><input type="text" class="field-input" id="modal-clicon" value="${esc(l.icon)}"></div>
+      `, () => {
+        l.platform = document.getElementById('modal-clplatform').value.trim();
+        l.url = document.getElementById('modal-clurl').value.trim();
+        l.icon = document.getElementById('modal-clicon').value.trim();
+        saveCt();
+        closeEditModal();
+        showToast('Link updated.');
+      });
+    };
+
+    const saveCt = () => {
+      data.title = document.getElementById('ct-title')?.value.trim() || data.title;
+      data.subtitle = document.getElementById('ct-subtitle')?.value.trim() || data.subtitle;
+      data.email = document.getElementById('ct-email')?.value.trim() || data.email;
+      data.mapTitle = document.getElementById('ct-maptitle')?.value.trim() || data.mapTitle;
+      data.mapLocation = document.getElementById('ct-maploc')?.value.trim() || data.mapLocation;
+      data.mapEmbedUrl = document.getElementById('ct-mapembed')?.value.trim() || data.mapEmbedUrl;
+      data.mapLink = document.getElementById('ct-maplink')?.value.trim() || data.mapLink;
+      PortfolioData.set('contact', data);
       renderContact();
+    };
+
+    document.getElementById('ct-save').addEventListener('click', () => {
+      saveCt();
+      showToast('Contact section saved.');
     });
 
     document.getElementById('ct-reset').addEventListener('click', () => {
@@ -1319,6 +1520,7 @@
   // ============================================================
   // INITIAL RENDER
   // ============================================================
+  updateSidebarBadges();
   renderDashboard();
 
 })();

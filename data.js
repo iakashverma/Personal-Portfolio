@@ -146,8 +146,10 @@ const PortfolioData = (() => {
       subtitle: 'Connect, collaborate, and turn ideas into something meaningful.',
       email: 'iakashverma00@gmail.com',
       socialLinks: [
-        { platform: 'GitHub', url: 'https://github.com/iakashverma', icon: 'fab fa-github' },
-        { platform: 'LinkedIn', url: 'https://linkedin.com/in/iakashverma00', icon: 'fab fa-linkedin-in' }
+        { platform: 'LinkedIn', url: 'https://www.linkedin.com/in/iakashverma00', icon: 'fab fa-linkedin-in' },
+        { platform: 'WhatsApp', url: 'https://wa.me/i.akash.verma', icon: 'fab fa-whatsapp' },
+        { platform: 'Telegram', url: 'https://t.me/patelxhivam', icon: 'fab fa-telegram-plane' },
+        { platform: 'Instagram', url: 'https://www.instagram.com/i.akash.verma/', icon: 'fab fa-instagram' }
       ],
       mapTitle: 'Lovely Professional University',
       mapLocation: 'Punjab, India',
@@ -160,12 +162,10 @@ const PortfolioData = (() => {
       description: 'Building intelligent, reliable digital systems at the intersection of AI/ML, Data Science, and Web Engineering.',
       copyright: '© 2026 Akash Verma. All rights reserved.',
       socialLinks: [
-        { platform: 'GitHub', url: 'https://github.com/iakashverma', icon: 'fab fa-github' },
-        { platform: 'LinkedIn', url: 'https://linkedin.com/in/iakashverma00', icon: 'fab fa-linkedin-in' },
-        { platform: 'LeetCode', url: 'https://leetcode.com/u/iakashverma/', icon: 'fas fa-code' },
-        { platform: 'GeeksforGeeks', url: 'https://www.geeksforgeeks.org/user/iakashverma/', icon: 'fas fa-terminal' },
-        { platform: 'HackerRank', url: 'https://www.hackerrank.com/profile/iakashverma', icon: 'fab fa-hackerrank' },
-        { platform: 'Instagram', url: 'https://instagram.com/i.akash.verma', icon: 'fab fa-instagram' }
+        { platform: 'WhatsApp', url: 'https://wa.me/i.akash.verma', icon: 'fab fa-whatsapp' },
+        { platform: 'Telegram', url: 'https://t.me/patelxhivam', icon: 'fab fa-telegram-plane' },
+        { platform: 'Email', url: 'mailto:iakashverma00@gmail.com', icon: 'fas fa-envelope' },
+        { platform: 'LinkedIn', url: 'https://www.linkedin.com/in/iakashverma00', icon: 'fab fa-linkedin-in' }
       ]
     },
 

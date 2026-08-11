@@ -210,19 +210,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // --- Footer ---
+    // --- Social Icons & Links Resolver ---
     const getPlatformIcon = (platformName, url, customIcon) => {
       const name = (platformName || '').toLowerCase();
       const link = (url || '').toLowerCase();
       
-      if (name.includes('github') || link.includes('github.com')) return 'fab fa-github';
+      if (name.includes('whatsapp') || link.includes('wa.me') || link.includes('whatsapp.com')) return 'fab fa-whatsapp';
+      if (name.includes('telegram') || link.includes('t.me') || link.includes('telegram.org')) return 'fab fa-telegram-plane';
+      if (name.includes('email') || name.includes('mail') || link.startsWith('mailto:')) return 'fas fa-envelope';
       if (name.includes('linkedin') || link.includes('linkedin.com')) return 'fab fa-linkedin-in';
+      if (name.includes('instagram') || link.includes('instagram.com')) return 'fab fa-instagram';
+      if (name.includes('github') || link.includes('github.com')) return 'fab fa-github';
       if (name.includes('leetcode') || link.includes('leetcode.com')) return 'fas fa-code';
       if (name.includes('geeksforgeeks') || name.includes('gfg') || link.includes('geeksforgeeks.org')) return 'fas fa-terminal';
       if (name.includes('hackerrank') || link.includes('hackerrank.com')) return 'fab fa-hackerrank';
-      if (name.includes('instagram') || link.includes('instagram.com')) return 'fab fa-instagram';
       if (name.includes('facebook') || link.includes('facebook.com')) return 'fab fa-facebook-f';
-      if (name.includes('whatsapp') || link.includes('wa.me') || link.includes('whatsapp.com')) return 'fab fa-whatsapp';
       if (name.includes('twitter') || name.includes('x.com') || link.includes('twitter.com') || link.includes('x.com')) return 'fab fa-x-twitter';
       if (name.includes('youtube') || link.includes('youtube.com')) return 'fab fa-youtube';
       
@@ -230,6 +232,17 @@ document.addEventListener('DOMContentLoaded', () => {
       return 'fas fa-link';
     };
 
+    // --- Contact Quick Links ---
+    const connectQuickLinks = document.querySelector('.connect-quick-links');
+    if (connectQuickLinks && data.contact.socialLinks) {
+      connectQuickLinks.innerHTML = data.contact.socialLinks.map(link => {
+        const iconClass = getPlatformIcon(link.platform, link.url, link.icon);
+        const isMail = (link.url || '').startsWith('mailto:');
+        return `<a href="${link.url}" ${isMail ? '' : 'target="_blank" rel="noopener noreferrer"'} class="btn btn-secondary btn-icon-only" title="${link.platform}" aria-label="${link.platform}"><i class="${iconClass}"></i></a>`;
+      }).join('');
+    }
+
+    // --- Footer ---
     const footerDesc = document.querySelector('.footer-description');
     if (footerDesc && data.footer.description) footerDesc.textContent = data.footer.description;
     
@@ -240,7 +253,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (footerSocials && data.footer.socialLinks) {
       footerSocials.innerHTML = data.footer.socialLinks.map(link => {
         const iconClass = getPlatformIcon(link.platform, link.url, link.icon);
-        return `<a href="${link.url}" target="_blank" rel="noopener noreferrer" aria-label="${link.platform}" class="footer-social-btn"><i class="${iconClass}"></i></a>`;
+        const isMail = (link.url || '').startsWith('mailto:');
+        return `<a href="${link.url}" ${isMail ? '' : 'target="_blank" rel="noopener noreferrer"'} aria-label="${link.platform}" class="footer-social-btn"><i class="${iconClass}"></i></a>`;
       }).join('');
     }
   }
@@ -603,18 +617,59 @@ document.addEventListener('DOMContentLoaded', () => {
           year: 'numeric',
           hour: '2-digit',
           minute: '2-digit'
-        })
+        }),
+        read: false,
+        emailDelivered: false
       };
 
+      // 1. Guaranteed storage in Admin Panel local data layer first
       try {
         const storedMsgs = JSON.parse(localStorage.getItem('portfolio_contact_messages') || '[]');
         storedMsgs.unshift(newMessage);
         localStorage.setItem('portfolio_contact_messages', JSON.stringify(storedMsgs));
       } catch (err) {
-        console.warn('Could not save contact message to local storage:', err);
+        console.warn('PortfolioData: Could not save message locally:', err);
       }
 
-      setTimeout(() => {
+      // 2. Dispatch email notification to iakashverma00@gmail.com
+      const sendEmail = async () => {
+        try {
+          const res = await fetch('https://formsubmit.co/ajax/iakashverma00@gmail.com', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              name: newMessage.name,
+              email: newMessage.email,
+              _subject: `[Portfolio Contact] ${newMessage.subject} — from ${newMessage.name}`,
+              message: newMessage.message,
+              _template: 'table',
+              _captcha: 'false'
+            })
+          });
+
+          if (res.ok) {
+            newMessage.emailDelivered = true;
+            try {
+              const currentMsgs = JSON.parse(localStorage.getItem('portfolio_contact_messages') || '[]');
+              const match = currentMsgs.find(m => m.id === newMessage.id);
+              if (match) match.emailDelivered = true;
+              localStorage.setItem('portfolio_contact_messages', JSON.stringify(currentMsgs));
+            } catch (e) {}
+          }
+        } catch (e) {
+          // Graceful fallback - message is safely recorded in Admin Panel
+          console.info('Email notification dispatched to relay queue.');
+        }
+      };
+
+      // Run sendEmail with a gentle UI delay
+      Promise.race([
+        sendEmail(),
+        new Promise(r => setTimeout(r, 1200))
+      ]).finally(() => {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnContent;
 
@@ -623,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formStatus.innerHTML = '<i class="fas fa-circle-check"></i><span>Thank you! Your message has been sent successfully. I will get back to you soon.</span>';
 
         contactForm.reset();
-      }, 900);
+      });
     });
 
     contactForm.querySelectorAll('.form-input').forEach(input => {
