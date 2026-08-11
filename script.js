@@ -39,6 +39,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const aboutSub = document.querySelector('#about .card-section-sub');
     if (aboutSub && data.about.subtitle) aboutSub.textContent = data.about.subtitle;
 
+    const aboutProfileImg = document.getElementById('about-profile-img');
+    const aboutProfileWrapper = document.getElementById('about-profile-wrapper');
+    if (aboutProfileImg && aboutProfileWrapper) {
+      if (data.about.profileImage) {
+        aboutProfileImg.src = data.about.profileImage;
+        aboutProfileWrapper.style.display = 'block';
+      } else {
+        aboutProfileWrapper.style.display = 'none';
+      }
+    }
+
     if (data.about.bio && data.about.bio.length) {
       const bioParas = document.querySelectorAll('.about-bio p');
       data.about.bio.forEach((pText, i) => {
@@ -62,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="project-actions">
               ${p.githubUrl ? `<a href="${p.githubUrl}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">GitHub</a>` : ''}
               ${p.demoUrl ? `<a href="${p.demoUrl}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>` : ''}
+              ${p.domain ? `<span class="btn-project-pill project-domain-pill">${p.domain}</span>` : ''}
             </div>
           </article>
         `).join('');
@@ -199,10 +211,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Footer ---
-    const footerDesc = document.querySelector('.footer-brand-desc');
+    const getPlatformIcon = (platformName, url, customIcon) => {
+      const name = (platformName || '').toLowerCase();
+      const link = (url || '').toLowerCase();
+      
+      if (name.includes('github') || link.includes('github.com')) return 'fab fa-github';
+      if (name.includes('linkedin') || link.includes('linkedin.com')) return 'fab fa-linkedin-in';
+      if (name.includes('leetcode') || link.includes('leetcode.com')) return 'fas fa-code';
+      if (name.includes('geeksforgeeks') || name.includes('gfg') || link.includes('geeksforgeeks.org')) return 'fas fa-terminal';
+      if (name.includes('hackerrank') || link.includes('hackerrank.com')) return 'fab fa-hackerrank';
+      if (name.includes('instagram') || link.includes('instagram.com')) return 'fab fa-instagram';
+      if (name.includes('facebook') || link.includes('facebook.com')) return 'fab fa-facebook-f';
+      if (name.includes('whatsapp') || link.includes('wa.me') || link.includes('whatsapp.com')) return 'fab fa-whatsapp';
+      if (name.includes('twitter') || name.includes('x.com') || link.includes('twitter.com') || link.includes('x.com')) return 'fab fa-x-twitter';
+      if (name.includes('youtube') || link.includes('youtube.com')) return 'fab fa-youtube';
+      
+      if (customIcon && customIcon !== 'fas fa-link') return customIcon;
+      return 'fas fa-link';
+    };
+
+    const footerDesc = document.querySelector('.footer-description');
     if (footerDesc && data.footer.description) footerDesc.textContent = data.footer.description;
-    const footerCopy = document.querySelector('.footer-copyright');
-    if (footerCopy && data.footer.copyright) footerCopy.textContent = data.footer.copyright;
+    
+    const footerCopySpan = document.querySelector('.footer-copyright span:not(.license-tag)');
+    if (footerCopySpan && data.footer.copyright) footerCopySpan.textContent = data.footer.copyright;
+
+    const footerSocials = document.querySelector('.footer-socials');
+    if (footerSocials && data.footer.socialLinks) {
+      footerSocials.innerHTML = data.footer.socialLinks.map(link => {
+        const iconClass = getPlatformIcon(link.platform, link.url, link.icon);
+        return `<a href="${link.url}" target="_blank" rel="noopener noreferrer" aria-label="${link.platform}" class="footer-social-btn"><i class="${iconClass}"></i></a>`;
+      }).join('');
+    }
   }
 
   // ==========================================
@@ -540,6 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!isValid) {
+        formStatus.style.display = '';
         formStatus.className = 'form-status status-error';
         formStatus.innerHTML = '<i class="fas fa-circle-exclamation"></i><span>Please fill in all required fields with a valid email address.</span>';
         return;
@@ -548,18 +589,41 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.disabled = true;
       const originalBtnContent = submitBtn.innerHTML;
       submitBtn.innerHTML = '<span>Sending...</span> <i class="fas fa-spinner fa-spin"></i>';
-      formStatus.className = 'form-status';
       formStatus.style.display = 'none';
+
+      const newMessage = {
+        id: '_' + Math.random().toString(36).slice(2, 11),
+        name: nameInput.value.trim(),
+        email: emailInput.value.trim(),
+        subject: subjectInput.value.trim(),
+        message: messageInput.value.trim(),
+        date: new Date().toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      };
+
+      try {
+        const storedMsgs = JSON.parse(localStorage.getItem('portfolio_contact_messages') || '[]');
+        storedMsgs.unshift(newMessage);
+        localStorage.setItem('portfolio_contact_messages', JSON.stringify(storedMsgs));
+      } catch (err) {
+        console.warn('Could not save contact message to local storage:', err);
+      }
 
       setTimeout(() => {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnContent;
 
+        formStatus.style.display = '';
         formStatus.className = 'form-status status-success';
         formStatus.innerHTML = '<i class="fas fa-circle-check"></i><span>Thank you! Your message has been sent successfully. I will get back to you soon.</span>';
 
         contactForm.reset();
-      }, 1000);
+      }, 900);
     });
 
     contactForm.querySelectorAll('.form-input').forEach(input => {
@@ -571,9 +635,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ==========================================
-  // 10. REAL-TIME GITHUB PROFILE API STATS
-  // ==========================================
   // ==========================================
   // 10. REAL-TIME MULTI-PLATFORM API STATS ENGINE
   // ==========================================
@@ -839,7 +900,6 @@ document.addEventListener('DOMContentLoaded', () => {
     box.appendChild(gridEl);
   };
 
-  fetchGitHubStats();
   renderGitHubHeatmapGrid();
 
   // ==========================================

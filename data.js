@@ -64,6 +64,7 @@ const PortfolioData = (() => {
     about: {
       title: 'About Me',
       subtitle: 'Developer working at the intersection of AI, Data, and Web Engineering.',
+      profileImage: 'images/profile.png',
       metrics: [
         { value: '2+', label: 'Years Building' },
         { value: '10+', label: 'Projects Shipped' }
@@ -85,10 +86,10 @@ const PortfolioData = (() => {
       title: "Projects I've built",
       subtitle: "Real things I've shipped — from research tools to full-stack apps.",
       items: [
-        { id: 'detoxa', icon: 'fas fa-flask', title: 'Detoxa', description: 'Digital Wellness & Self-Regulation Research Platform built with Python, Machine Learning, PHP, and MySQL.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', enabled: true },
-        { id: 'moodix', icon: 'fas fa-brain', title: 'Moodix', description: 'AI-Powered Study Planner and Burnout Detection system using Java, MySQL, and custom AI logic.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', enabled: true },
-        { id: 'signalstack', icon: 'fas fa-signal', title: 'SignalStack', description: 'Real-Time Data Pipeline for Sensor Anomaly Detection with Python, Pandas, Scikit-learn, and MongoDB.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', enabled: true },
-        { id: 'ledgerline', icon: 'fas fa-wallet', title: 'LedgerLine', description: 'Personal Finance Tracker with Predictive Budgeting powered by JavaScript, Node.js, and MySQL.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', enabled: true }
+        { id: 'detoxa', icon: 'fas fa-flask', title: 'Detoxa', description: 'Digital Wellness & Self-Regulation Research Platform built with Python, Machine Learning, PHP, and MySQL.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', domain: 'AI/ML', enabled: true },
+        { id: 'moodix', icon: 'fas fa-brain', title: 'Moodix', description: 'AI-Powered Study Planner and Burnout Detection system using Java, MySQL, and custom AI logic.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', domain: 'AI/ML', enabled: true },
+        { id: 'signalstack', icon: 'fas fa-signal', title: 'SignalStack', description: 'Real-Time Data Pipeline for Sensor Anomaly Detection with Python, Pandas, Scikit-learn, and MongoDB.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', domain: 'Data Science', enabled: true },
+        { id: 'ledgerline', icon: 'fas fa-wallet', title: 'LedgerLine', description: 'Personal Finance Tracker with Predictive Budgeting powered by JavaScript, Node.js, and MySQL.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', domain: 'Web', enabled: true }
       ]
     },
 
@@ -221,7 +222,7 @@ const PortfolioData = (() => {
     if (stored && stored[section] !== undefined) {
       return stored[section];
     }
-    return JSON.parse(JSON.stringify(defaults[section])); // deep clone default
+    return defaults[section] !== undefined ? JSON.parse(JSON.stringify(defaults[section])) : null;
   };
 
   /**
@@ -268,7 +269,7 @@ const PortfolioData = (() => {
    * Get default data for a section (ignoring overrides).
    */
   const getDefault = (section) => {
-    return JSON.parse(JSON.stringify(defaults[section]));
+    return defaults[section] !== undefined ? JSON.parse(JSON.stringify(defaults[section])) : null;
   };
 
   /**

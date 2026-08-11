@@ -117,13 +117,16 @@
   // UTILITY HELPERS
   // ============================================================
   const esc = (str) => {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   };
 
-  const genId = () => '_' + Math.random().toString(36).substr(2, 9);
+  const genId = () => '_' + Math.random().toString(36).slice(2, 11);
 
   const toggleHTML = (checked, id) => {
     return `<label class="toggle-switch"><input type="checkbox" id="${id}" ${checked ? 'checked' : ''}><span class="toggle-slider"></span></label>`;
@@ -131,6 +134,25 @@
 
   const editedBadge = (section) => {
     return PortfolioData.isEdited(section) ? `<span class="edited-badge"><i class="fas fa-pen"></i> Edited</span>` : '';
+  };
+
+  // --- Contact Message Utilities ---
+  const getMessages = () => {
+    try {
+      const stored = localStorage.getItem('portfolio_contact_messages');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const saveMessages = (msgs) => {
+    try {
+      localStorage.setItem('portfolio_contact_messages', JSON.stringify(msgs));
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
 
   // ============================================================
@@ -159,13 +181,15 @@
   // ============================================================
   const renderDashboard = () => {
     const data = PortfolioData.getAll();
+    const messages = getMessages();
     const stats = [
       { icon: 'fas fa-folder-open', value: data.projects.items.length, label: 'Projects' },
       { icon: 'fas fa-cubes', value: data.skills.categories.length, label: 'Skill Categories' },
       { icon: 'fas fa-graduation-cap', value: data.education.items.length, label: 'Education' },
       { icon: 'fas fa-certificate', value: data.certifications.items.length, label: 'Certifications' },
       { icon: 'fas fa-images', value: data.gallery.length, label: 'Gallery Items' },
-      { icon: 'fas fa-globe', value: data.presence.platforms.length, label: 'Platforms' }
+      { icon: 'fas fa-globe', value: data.presence.platforms.length, label: 'Platforms' },
+      { icon: 'fas fa-inbox', value: messages.length, label: 'Messages Inbox' }
     ];
 
     mainEl.innerHTML = `
@@ -184,6 +208,31 @@
           </div>
         `).join('')}
       </div>
+
+      <div class="editor-card">
+        <div class="editor-card-header">
+          <span class="editor-card-title"><i class="fas fa-inbox" style="margin-right:8px;color:var(--status-green);"></i>Recent Messages (${messages.length})</span>
+        </div>
+        <div class="editor-card-body">
+          ${messages.length === 0 ? '<p style="color:var(--text-muted);margin:0;padding:12px 0;">No messages received yet. Inquiries submitted via the portfolio contact form will appear here.</p>' : `
+            <div class="editor-list">
+              ${messages.slice(0, 5).map((m, i) => `
+                <div class="editor-list-item">
+                  <div class="editor-list-item-content">
+                    <div class="editor-list-item-title">${esc(m.name)} <span style="font-weight:400;font-size:12px;color:var(--text-muted);">&lt;${esc(m.email)}&gt;</span></div>
+                    <div class="editor-list-item-sub"><strong>${esc(m.subject)}</strong> — ${esc((m.message || '').substring(0, 70))}${m.message && m.message.length > 70 ? '...' : ''} <span style="opacity:0.6;margin-left:8px;">${esc(m.date || '')}</span></div>
+                  </div>
+                  <div class="editor-list-item-actions">
+                    <button class="item-action-btn view-msg-btn" title="View Message" data-idx="${i}"><i class="fas fa-eye"></i></button>
+                    <button class="item-action-btn delete-btn del-msg-btn" title="Delete Message" data-idx="${i}"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+
       <div class="editor-card">
         <div class="editor-card-header">
           <span class="editor-card-title">Quick Actions</span>
@@ -198,6 +247,36 @@
         </div>
       </div>
     `;
+
+    // Bind Message actions in dashboard
+    document.querySelectorAll('.view-msg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        const msg = messages[idx];
+        if (msg) {
+          showEditModal('Message Details', `
+            <div class="field-group"><label class="field-label">From</label><input type="text" class="field-input" readonly value="${esc(msg.name)} &lt;${esc(msg.email)}&gt;"></div>
+            <div class="field-group"><label class="field-label">Date</label><input type="text" class="field-input" readonly value="${esc(msg.date || 'Unknown')}"></div>
+            <div class="field-group"><label class="field-label">Subject</label><input type="text" class="field-input" readonly value="${esc(msg.subject)}"></div>
+            <div class="field-group"><label class="field-label">Message</label><textarea class="field-textarea" rows="6" readonly>${esc(msg.message)}</textarea></div>
+          `, () => {
+            closeEditModal();
+          });
+        }
+      });
+    });
+
+    document.querySelectorAll('.del-msg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        showConfirm('Delete Message?', 'This message will be removed from your inbox.', () => {
+          messages.splice(idx, 1);
+          saveMessages(messages);
+          renderDashboard();
+          showToast('Message deleted.');
+        });
+      });
+    });
 
     document.getElementById('reset-all-btn')?.addEventListener('click', () => {
       showConfirm('Reset All Content?', 'This will revert all sections to their original default content. Any admin edits will be permanently lost.', () => {
@@ -305,10 +384,36 @@
       <div class="admin-main-header">
         <div>
           <h1 class="admin-page-title">About Section</h1>
-          <p class="admin-page-subtitle">Edit your personal bio and highlights.</p>
+          <p class="admin-page-subtitle">Edit your personal bio, highlights, and profile picture.</p>
         </div>
         ${editedBadge('about')}
       </div>
+
+      <div class="editor-card">
+        <div class="editor-card-header"><span class="editor-card-title">Profile Picture</span></div>
+        <div class="editor-card-body">
+          <div class="field-group" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+            <div style="width:120px;height:120px;border-radius:12px;border:1px solid var(--border);overflow:hidden;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+              <img id="about-img-preview" src="${data.profileImage || ''}" alt="Preview" style="max-width:100%;max-height:100%;object-fit:cover;display:${data.profileImage ? 'block' : 'none'};">
+              <span id="about-img-placeholder" style="color:var(--text-muted);font-size:12px;display:${data.profileImage ? 'none' : 'block'};">No Image</span>
+            </div>
+            <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:12px;">
+              <div class="field-group" style="margin-bottom:0;">
+                <label class="field-label">Upload New Picture</label>
+                <input type="file" id="about-img-file" accept="image/*" class="field-input" style="padding:6px 12px;font-size:13px;background:rgba(255,255,255,0.02);">
+              </div>
+              <div class="field-group" style="margin-bottom:0;">
+                <label class="field-label">Image Path / URL (alternative)</label>
+                <input type="text" id="about-img-url" class="field-input" value="${esc(data.profileImage || '')}" placeholder="images/profile.png">
+              </div>
+              <div>
+                <button type="button" class="btn-admin btn-danger" id="about-img-delete" style="padding:8px 14px;font-size:12.5px;"><i class="fas fa-trash-alt"></i> Remove Profile Picture</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="editor-card">
         <div class="editor-card-header"><span class="editor-card-title">Section Header</span></div>
         <div class="editor-card-body">
@@ -391,10 +496,66 @@
       </div>
     `;
 
+    // Picture handlers
+    const fileInput = document.getElementById('about-img-file');
+    const urlInput = document.getElementById('about-img-url');
+    const previewImg = document.getElementById('about-img-preview');
+    const placeholderText = document.getElementById('about-img-placeholder');
+    const deleteBtn = document.getElementById('about-img-delete');
+
+    if (fileInput && urlInput && previewImg && placeholderText) {
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          if (!file.type.startsWith('image/')) {
+            showToast('Please select a valid image file.', 'error');
+            fileInput.value = '';
+            return;
+          }
+          if (file.size > 1.5 * 1024 * 1024) {
+            showToast('Image size exceeds 1.5MB. Please choose a smaller image.', 'error');
+            fileInput.value = '';
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const base64 = event.target.result;
+            previewImg.src = base64;
+            previewImg.style.display = 'block';
+            placeholderText.style.display = 'none';
+            urlInput.value = base64;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      urlInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+          previewImg.src = val;
+          previewImg.style.display = 'block';
+          placeholderText.style.display = 'none';
+        } else {
+          previewImg.src = '';
+          previewImg.style.display = 'none';
+          placeholderText.style.display = 'block';
+        }
+      });
+
+      deleteBtn?.addEventListener('click', () => {
+        previewImg.src = '';
+        previewImg.style.display = 'none';
+        placeholderText.style.display = 'block';
+        urlInput.value = '';
+        fileInput.value = '';
+      });
+    }
+
     document.getElementById('about-save').addEventListener('click', () => {
       const updated = {
         title: document.getElementById('about-title').value.trim(),
         subtitle: document.getElementById('about-subtitle').value.trim(),
+        profileImage: document.getElementById('about-img-url').value.trim(),
         metrics: Array.from(document.querySelectorAll('.metric-val')).map((el, i) => ({
           value: el.value.trim(),
           label: document.querySelectorAll('.metric-label')[i].value.trim()
@@ -434,9 +595,10 @@
           { key: 'icon', label: 'Icon Class (e.g. fas fa-flask)', type: 'text' },
           { key: 'description', label: 'Description', type: 'textarea' },
           { key: 'githubUrl', label: 'GitHub URL', type: 'text' },
-          { key: 'demoUrl', label: 'Live Demo URL', type: 'text' }
+          { key: 'demoUrl', label: 'Live Demo URL', type: 'text' },
+          { key: 'domain', label: 'Project Domain (e.g. AI/ML, Data Science, Web, IoT)', type: 'text' }
         ],
-        newItem: () => ({ id: genId(), icon: 'fas fa-cube', title: 'New Project', description: 'Project description here.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', enabled: true })
+        newItem: () => ({ id: genId(), icon: 'fas fa-cube', title: 'New Project', description: 'Project description here.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', domain: 'Web', enabled: true })
       },
       skills: {
         title: 'Skills', sub: 'Manage skill categories and tags.',
@@ -955,17 +1117,18 @@
   // ============================================================
   const renderContact = () => {
     const data = PortfolioData.get('contact');
+    const messages = getMessages();
 
     mainEl.innerHTML = `
       <div class="admin-main-header">
         <div>
           <h1 class="admin-page-title">Contact Section</h1>
-          <p class="admin-page-subtitle">Manage contact information and map.</p>
+          <p class="admin-page-subtitle">Manage contact information, map, and view incoming inquiries.</p>
         </div>
         ${editedBadge('contact')}
       </div>
       <div class="editor-card">
-        <div class="editor-card-header"><span class="editor-card-title">Content</span></div>
+        <div class="editor-card-header"><span class="editor-card-title">Content &amp; Location</span></div>
         <div class="editor-card-body">
           <div class="field-row">
             <div class="field-group"><label class="field-label">Title</label><input type="text" class="field-input" id="ct-title" value="${esc(data.title)}"></div>
@@ -982,6 +1145,30 @@
         <div class="editor-card-footer">
           <button class="btn-admin btn-cancel" id="ct-reset">Reset to Default</button>
           <button class="btn-admin btn-save" id="ct-save"><i class="fas fa-check"></i> Save Changes</button>
+        </div>
+      </div>
+
+      <div class="editor-card">
+        <div class="editor-card-header">
+          <span class="editor-card-title"><i class="fas fa-inbox" style="margin-right:8px;color:var(--status-green);"></i>Received Messages (${messages.length})</span>
+        </div>
+        <div class="editor-card-body">
+          ${messages.length === 0 ? '<p style="color:var(--text-muted);margin:0;padding:12px 0;">No messages received yet.</p>' : `
+            <div class="editor-list">
+              ${messages.map((m, i) => `
+                <div class="editor-list-item">
+                  <div class="editor-list-item-content">
+                    <div class="editor-list-item-title">${esc(m.name)} <span style="font-weight:400;font-size:12px;color:var(--text-muted);">&lt;${esc(m.email)}&gt;</span></div>
+                    <div class="editor-list-item-sub"><strong>${esc(m.subject)}</strong> — ${esc((m.message || '').substring(0, 80))}${m.message && m.message.length > 80 ? '...' : ''} <span style="opacity:0.6;margin-left:8px;">${esc(m.date || '')}</span></div>
+                  </div>
+                  <div class="editor-list-item-actions">
+                    <button class="item-action-btn view-msg-btn-c" title="View Message" data-idx="${i}"><i class="fas fa-eye"></i></button>
+                    <button class="item-action-btn delete-btn del-msg-btn-c" title="Delete Message" data-idx="${i}"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
         </div>
       </div>
     `;
@@ -1004,6 +1191,36 @@
 
     document.getElementById('ct-reset').addEventListener('click', () => {
       showConfirm('Reset Contact?', 'All changes will be lost.', () => { PortfolioData.reset('contact'); renderContact(); showToast('Reset.'); });
+    });
+
+    // Message actions in contact editor
+    document.querySelectorAll('.view-msg-btn-c').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        const msg = messages[idx];
+        if (msg) {
+          showEditModal('Message Details', `
+            <div class="field-group"><label class="field-label">From</label><input type="text" class="field-input" readonly value="${esc(msg.name)} &lt;${esc(msg.email)}&gt;"></div>
+            <div class="field-group"><label class="field-label">Date</label><input type="text" class="field-input" readonly value="${esc(msg.date || 'Unknown')}"></div>
+            <div class="field-group"><label class="field-label">Subject</label><input type="text" class="field-input" readonly value="${esc(msg.subject)}"></div>
+            <div class="field-group"><label class="field-label">Message</label><textarea class="field-textarea" rows="6" readonly>${esc(msg.message)}</textarea></div>
+          `, () => {
+            closeEditModal();
+          });
+        }
+      });
+    });
+
+    document.querySelectorAll('.del-msg-btn-c').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        showConfirm('Delete Message?', 'This message will be removed from your inbox.', () => {
+          messages.splice(idx, 1);
+          saveMessages(messages);
+          renderContact();
+          showToast('Message deleted.');
+        });
+      });
     });
   };
 

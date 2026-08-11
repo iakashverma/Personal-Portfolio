@@ -69,15 +69,15 @@
   <div class="mobile-nav" id="mobile-nav" aria-hidden="true">
     <nav aria-label="Mobile">
       <ul>
-        <li><a href="#origin" data-nav="origin">01 — HOME</a></li>
-        <li><a href="#about" data-nav="about">02 — ABOUT</a></li>
-        <li><a href="#fieldlog" data-nav="fieldlog">03 — PROJECTS</a></li>
-        <li><a href="#stack" data-nav="stack">04 — SKILLS</a></li>
-        <li><a href="#education" data-nav="education">05 — EDUCATION</a></li>
-        <li><a href="#certifications" data-nav="certifications">06 — CERTIFICATION</a></li>
-        <li><a href="#presence" data-nav="presence">07 — PRESENCE</a></li>
-        <li><a href="#gallery" data-nav="gallery">08 — GALLERY</a></li>
-        <li><a href="#connect" data-nav="connect">09 — CONTACT</a></li>
+        <li><a href="#origin" data-nav="origin"><span class="menu-num mono">01</span><span class="menu-text">HOME</span></a></li>
+        <li><a href="#about" data-nav="about"><span class="menu-num mono">02</span><span class="menu-text">ABOUT</span></a></li>
+        <li><a href="#fieldlog" data-nav="fieldlog"><span class="menu-num mono">03</span><span class="menu-text">PROJECTS</span></a></li>
+        <li><a href="#stack" data-nav="stack"><span class="menu-num mono">04</span><span class="menu-text">SKILLS</span></a></li>
+        <li><a href="#education" data-nav="education"><span class="menu-num mono">05</span><span class="menu-text">EDUCATION</span></a></li>
+        <li><a href="#certifications" data-nav="certifications"><span class="menu-num mono">06</span><span class="menu-text">CERTIFICATIONS</span></a></li>
+        <li><a href="#presence" data-nav="presence"><span class="menu-num mono">07</span><span class="menu-text">PRESENCE</span></a></li>
+        <li><a href="#gallery" data-nav="gallery"><span class="menu-num mono">08</span><span class="menu-text">GALLERY</span></a></li>
+        <li><a href="#connect" data-nav="connect"><span class="menu-num mono">09</span><span class="menu-text">CONTACT</span></a></li>
       </ul>
     </nav>
   </div>
@@ -161,7 +161,12 @@
               <span class="mono">ACTIVE DEVELOPER</span>
             </div>
 
-            <div class="about-metrics">
+            <div class="about-profile-wrapper" id="about-profile-wrapper">
+              <img id="about-profile-img" src="images/profile.png" alt="Akash Verma" class="about-profile-img"
+                loading="lazy">
+            </div>
+
+            <!-- <div class="about-metrics">
               <div class="metric-item">
                 <span class="metric-num mono">2+</span>
                 <span class="metric-label">Years Building</span>
@@ -170,9 +175,9 @@
                 <span class="metric-num mono">10+</span>
                 <span class="metric-label">Projects Shipped</span>
               </div>
-            </div>
+            </div> -->
 
-            <div class="about-highlights">
+            <!-- <div class="about-highlights">
               <div class="highlight-row">
                 <i class="fas fa-graduation-cap"></i>
                 <div>
@@ -194,7 +199,7 @@
                   <span class="highlight-sub">Building quiet, high-impact software</span>
                 </div>
               </div>
-            </div>
+            </div> -->
           </div>
 
           <div class="about-bio" data-reveal>
@@ -245,6 +250,7 @@
               <a href="https://github.com/iakashverma" target="_blank" rel="noopener noreferrer"
                 class="btn-project-pill">GitHub</a>
               <a href="#" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>
+              <span class="btn-project-pill project-domain-pill">AI/ML</span>
             </div>
           </article>
 
@@ -259,62 +265,7 @@
               <a href="https://github.com/iakashverma" target="_blank" rel="noopener noreferrer"
                 class="btn-project-pill">GitHub</a>
               <a href="#" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>
-            </div>
-          </article>
-
-          <article class="feature-card project-card" tabindex="0">
-            <div class="feature-card-icon">
-              <i class="fas fa-brain"></i>
-            </div>
-            <h3 class="feature-card-title">Moodix</h3>
-            <p class="feature-card-desc">AI-Powered Study Planner and Burnout Detection system using Java, MySQL, and
-              custom AI logic.</p>
-            <div class="project-actions">
-              <a href="https://github.com/iakashverma" target="_blank" rel="noopener noreferrer"
-                class="btn-project-pill">GitHub</a>
-              <a href="#" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>
-            </div>
-          </article>
-
-          <article class="feature-card project-card" tabindex="0">
-            <div class="feature-card-icon">
-              <i class="fas fa-brain"></i>
-            </div>
-            <h3 class="feature-card-title">Moodix</h3>
-            <p class="feature-card-desc">AI-Powered Study Planner and Burnout Detection system using Java, MySQL, and
-              custom AI logic.</p>
-            <div class="project-actions">
-              <a href="https://github.com/iakashverma" target="_blank" rel="noopener noreferrer"
-                class="btn-project-pill">GitHub</a>
-              <a href="#" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>
-            </div>
-          </article>
-
-          <article class="feature-card project-card" tabindex="0">
-            <div class="feature-card-icon">
-              <i class="fas fa-brain"></i>
-            </div>
-            <h3 class="feature-card-title">Moodix</h3>
-            <p class="feature-card-desc">AI-Powered Study Planner and Burnout Detection system using Java, MySQL, and
-              custom AI logic.</p>
-            <div class="project-actions">
-              <a href="https://github.com/iakashverma" target="_blank" rel="noopener noreferrer"
-                class="btn-project-pill">GitHub</a>
-              <a href="#" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>
-            </div>
-          </article>
-
-          <article class="feature-card project-card" tabindex="0">
-            <div class="feature-card-icon">
-              <i class="fas fa-brain"></i>
-            </div>
-            <h3 class="feature-card-title">Moodix</h3>
-            <p class="feature-card-desc">AI-Powered Study Planner and Burnout Detection system using Java, MySQL, and
-              custom AI logic.</p>
-            <div class="project-actions">
-              <a href="https://github.com/iakashverma" target="_blank" rel="noopener noreferrer"
-                class="btn-project-pill">GitHub</a>
-              <a href="#" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>
+              <span class="btn-project-pill project-domain-pill">AI/ML</span>
             </div>
           </article>
 
@@ -329,6 +280,7 @@
               <a href="https://github.com/iakashverma" target="_blank" rel="noopener noreferrer"
                 class="btn-project-pill">GitHub</a>
               <a href="#" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>
+              <span class="btn-project-pill project-domain-pill">Data Science</span>
             </div>
           </article>
 
@@ -343,6 +295,7 @@
               <a href="https://github.com/iakashverma" target="_blank" rel="noopener noreferrer"
                 class="btn-project-pill">GitHub</a>
               <a href="#" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>
+              <span class="btn-project-pill project-domain-pill">Web</span>
             </div>
           </article>
 
