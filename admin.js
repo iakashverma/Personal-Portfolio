@@ -316,7 +316,7 @@
           <h1 class="admin-page-title">Messages Inbox</h1>
           <p class="admin-page-subtitle">View, reply to, and manage contact inquiries sent through your portfolio website.</p>
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
           ${messages.length > 0 ? `
             <button class="btn-admin btn-cancel" id="mark-all-read-btn"><i class="fas fa-check-double"></i> Mark All Read</button>
             <button class="btn-admin btn-danger" id="clear-all-msgs-btn"><i class="fas fa-trash-alt"></i> Clear All</button>
@@ -330,31 +330,40 @@
         </div>
         <div class="editor-card-body">
           ${messages.length === 0 ? `
-            <div style="text-align:center;padding:48px 16px;color:var(--text-muted);">
-              <i class="fas fa-inbox" style="font-size:36px;margin-bottom:12px;opacity:0.3;"></i>
-              <p style="margin:0;font-size:15px;font-weight:600;color:var(--text-primary);">Your inbox is empty.</p>
-              <p style="margin:6px 0 0 0;font-size:13px;opacity:0.7;">When visitors submit your portfolio contact form, their messages will appear here and notify iakashverma00@gmail.com.</p>
+            <div style="text-align:center;padding:56px 16px;color:var(--text-muted);">
+              <i class="fas fa-inbox" style="font-size:42px;margin-bottom:14px;opacity:0.3;color:var(--status-green);"></i>
+              <p style="margin:0;font-size:16px;font-weight:700;color:var(--text-primary);">Your inbox is empty</p>
+              <p style="margin:6px 0 0 0;font-size:13px;opacity:0.75;max-width:440px;margin-left:auto;margin-right:auto;">When visitors submit your portfolio contact form, their messages will appear here and trigger an email notification to <strong>iakashverma00@gmail.com</strong>.</p>
             </div>
           ` : `
-            <div class="editor-list" id="inbox-list">
+            <div class="msg-inbox-list" id="inbox-list">
               ${messages.map((m, i) => `
-                <div class="editor-list-item" style="${!m.read ? 'border-left:3px solid var(--status-green);background:rgba(16,185,129,0.03);' : ''}">
-                  <div class="editor-list-item-content">
-                    <div class="editor-list-item-title">
-                      ${!m.read ? '<span class="msg-unread-dot" title="Unread Message"></span>' : ''}
-                      ${esc(m.name)} 
-                      <span style="font-weight:400;font-size:12px;color:var(--text-muted);margin-left:6px;">&lt;${esc(m.email)}&gt;</span>
-                      ${m.emailDelivered ? '<span style="margin-left:8px;font-size:11px;color:var(--status-green);font-family:var(--font-mono);"><i class="fas fa-paper-plane"></i> Email Relayed</span>' : ''}
+                <div class="msg-inbox-card ${!m.read ? 'is-unread' : ''}">
+                  <div class="msg-inbox-body">
+                    <div class="msg-inbox-top">
+                      <div class="msg-inbox-sender">
+                        ${!m.read ? '<span class="msg-unread-pulse" title="Unread Message"></span>' : ''}
+                        <span class="msg-sender-name">${esc(m.name)}</span>
+                        <span class="msg-sender-email">&lt;${esc(m.email)}&gt;</span>
+                      </div>
+                      <div class="msg-inbox-meta">
+                        ${m.emailDelivered ? '<span class="msg-relay-badge"><i class="fas fa-paper-plane"></i> Email Relayed</span>' : ''}
+                        <span class="msg-timestamp"><i class="far fa-clock"></i> ${esc(m.date || '')}</span>
+                      </div>
                     </div>
-                    <div class="editor-list-item-sub">
-                      <strong>${esc(m.subject)}</strong> — ${esc((m.message || '').substring(0, 95))}${m.message && m.message.length > 95 ? '...' : ''}
-                      <span style="opacity:0.6;margin-left:10px;font-family:var(--font-mono);">${esc(m.date || '')}</span>
-                    </div>
+                    <div class="msg-inbox-subject">${esc(m.subject)}</div>
+                    <div class="msg-inbox-preview">${esc(m.message)}</div>
                   </div>
-                  <div class="editor-list-item-actions">
-                    <button class="item-action-btn view-inbox-msg" title="View & Reply" data-idx="${i}"><i class="fas fa-eye"></i></button>
-                    <a href="mailto:${esc(m.email)}?subject=Re: ${encodeURIComponent(m.subject || '')}" class="item-action-btn" title="Direct Email Reply" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;"><i class="fas fa-reply"></i></a>
-                    <button class="item-action-btn delete-btn del-inbox-msg" title="Delete" data-idx="${i}"><i class="fas fa-trash-alt"></i></button>
+                  <div class="msg-inbox-actions">
+                    <button class="msg-action-btn view-inbox-msg" title="View Message Details & Reply" data-idx="${i}">
+                      <i class="fas fa-eye"></i> <span>View</span>
+                    </button>
+                    <a href="mailto:${esc(m.email)}?subject=Re: ${encodeURIComponent(m.subject || '')}" class="msg-action-btn reply-btn" title="Direct Email Reply">
+                      <i class="fas fa-reply"></i> <span>Reply</span>
+                    </a>
+                    <button class="msg-action-btn delete-btn del-inbox-msg" title="Delete Message" data-idx="${i}">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
                   </div>
                 </div>
               `).join('')}

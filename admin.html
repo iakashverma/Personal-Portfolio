@@ -106,10 +106,25 @@
         });
       }
 
+      let failedAttempts = 0;
+      let lockoutUntil = 0;
+
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorEl.textContent = '';
         errorEl.className = 'login-error';
+
+        // Brute-force lockout: 5 failed attempts = 30-second cooldown
+        const now = Date.now();
+        if (failedAttempts >= 5 && now < lockoutUntil) {
+          const secsLeft = Math.ceil((lockoutUntil - now) / 1000);
+          errorEl.textContent = `Too many failed attempts. Please wait ${secsLeft} seconds.`;
+          errorEl.className = 'login-error show';
+          return;
+        }
+        if (now >= lockoutUntil) {
+          failedAttempts = 0;
+        }
 
         const email = document.getElementById('login-email').value.trim().toLowerCase();
         const password = document.getElementById('login-password').value;
@@ -129,11 +144,18 @@
         const passHash = await sha256(password);
 
         if (email === VALID_EMAIL && passHash === VALID_PASS_HASH) {
+          failedAttempts = 0;
           sessionStorage.setItem('admin_session', 'authenticated');
           sessionStorage.setItem('admin_email', email);
           window.location.href = 'admin-dashboard.html';
         } else {
-          errorEl.textContent = 'Invalid email or password. Please try again.';
+          failedAttempts++;
+          if (failedAttempts >= 5) {
+            lockoutUntil = Date.now() + 30000;
+            errorEl.textContent = 'Too many failed attempts. Please wait 30 seconds.';
+          } else {
+            errorEl.textContent = 'Invalid email or password. Please try again.';
+          }
           errorEl.className = 'login-error show';
           submitBtn.disabled = false;
           submitBtn.innerHTML = '<span>Sign In</span> <i class="fas fa-arrow-right"></i>';

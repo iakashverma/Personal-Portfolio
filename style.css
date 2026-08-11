@@ -3122,5 +3122,23 @@ body.intro-active {
   transition: width 2.4s cubic-bezier(0.12, 0.88, 0.32, 1);
 }
 
+/* Intro screen responsive adjustments */
+@media (max-width: 640px) {
+  .intro-floating-code {
+    display: none;
+  }
 
+  .intro-glow-backdrop {
+    width: 320px;
+    height: 320px;
+  }
 
+  .intro-header {
+    margin-bottom: 18px;
+    padding: 5px 10px;
+  }
+
+  .intro-sys-tag {
+    font-size: 10px;
+  }
+}

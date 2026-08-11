@@ -7,6 +7,13 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  // HTML escape helper for defense-in-depth on CMS-rendered content
+  const escHTML = (str) => {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  };
+
+
   // ==========================================
   // 0. PORTFOLIO INTRO GREETING SEQUENCE (Premium 3s Developer Sequence)
   // ==========================================
@@ -180,12 +187,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="feature-card-icon">
               <i class="${p.icon || 'fas fa-cube'}"></i>
             </div>
-            <h3 class="feature-card-title">${p.title}</h3>
-            <p class="feature-card-desc">${p.description}</p>
+            <h3 class="feature-card-title">${escHTML(p.title)}</h3>
+            <p class="feature-card-desc">${escHTML(p.description)}</p>
             <div class="project-actions">
-              ${p.githubUrl ? `<a href="${p.githubUrl}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">GitHub</a>` : ''}
-              ${p.demoUrl ? `<a href="${p.demoUrl}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>` : ''}
-              ${p.domain ? `<span class="btn-project-pill project-domain-pill">${p.domain}</span>` : ''}
+              ${p.githubUrl ? `<a href="${escHTML(p.githubUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">GitHub</a>` : ''}
+              ${p.demoUrl ? `<a href="${escHTML(p.demoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>` : ''}
+              ${p.domain ? `<span class="btn-project-pill project-domain-pill">${escHTML(p.domain)}</span>` : ''}
             </div>
           </article>
         `).join('');
@@ -231,10 +238,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="skills-card" tabindex="0">
             <div class="skills-card-header">
               <i class="${s.icon || 'fas fa-code'}"></i>
-              <h3>${s.name}</h3>
+              <h3>${escHTML(s.name)}</h3>
             </div>
             <div class="skills-tags">
-              ${(s.tags || []).map(t => `<span class="skill-tag">${t}</span>`).join('')}
+              ${(s.tags || []).map(t => `<span class="skill-tag">${escHTML(t)}</span>`).join('')}
             </div>
           </div>
         `).join('');
@@ -252,17 +259,17 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="timeline-icon">
                 <i class="${e.icon || 'fas fa-graduation-cap'}"></i>
               </div>
-              <span class="timeline-badge">${e.badge}</span>
+              <span class="timeline-badge">${escHTML(e.badge)}</span>
             </div>
             <div class="timeline-body">
               <div class="timeline-header">
-                <h3 class="timeline-degree">${e.degree}</h3>
-                <span class="timeline-level">${e.level}</span>
-                <span class="timeline-org">${e.org}</span>
+                <h3 class="timeline-degree">${escHTML(e.degree)}</h3>
+                <span class="timeline-level">${escHTML(e.level)}</span>
+                <span class="timeline-org">${escHTML(e.org)}</span>
               </div>
-              <p class="timeline-desc">${e.description}</p>
+              <p class="timeline-desc">${escHTML(e.description)}</p>
               <div class="timeline-highlights">
-                ${(e.highlights || []).map(h => `<span class="highlight-tag mono"><i class="fas fa-check"></i> ${h}</span>`).join('')}
+                ${(e.highlights || []).map(h => `<span class="highlight-tag mono"><i class="fas fa-check"></i> ${escHTML(h)}</span>`).join('')}
               </div>
             </div>
           </div>
@@ -281,9 +288,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="feature-card-icon">
               <i class="${c.icon || 'fas fa-certificate'}"></i>
             </div>
-            <h3 class="feature-card-title">${c.title}</h3>
-            <p class="feature-card-desc">${c.description}</p>
-            <a href="${c.url || '#'}" target="_blank" rel="noopener noreferrer" class="btn-view-cert">
+            <h3 class="feature-card-title">${escHTML(c.title)}</h3>
+            <p class="feature-card-desc">${escHTML(c.description)}</p>
+            <a href="${escHTML(c.url || '#')}" target="_blank" rel="noopener noreferrer" class="btn-view-cert">
               <span>View Certificate</span>
               <span class="cert-arrow">→</span>
             </a>
@@ -515,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
     lightboxImg.src = item.src;
     lightboxImg.alt = item.title;
     lightboxBadge.textContent = item.category;
-    lightboxDate.textContent = item.date;
+    lightboxDate.textContent = item.date || '';
     lightboxTitle.textContent = item.title;
     lightboxCaption.textContent = item.caption;
 
@@ -534,13 +541,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (galleryGrid) {
     galleryGrid.innerHTML = galleryData.map(item => `
-      <div class="gallery-opencluely-card" data-id="${item.id}" tabindex="0" role="button" aria-label="View photo: ${item.title}">
+      <div class="gallery-opencluely-card" data-id="${escHTML(item.id)}" tabindex="0" role="button" aria-label="View photo: ${escHTML(item.title)}">
         <div class="gallery-card-image-wrapper">
-          <img src="${item.src}" alt="${item.title}" class="gallery-card-img" loading="lazy">
+          <img src="${escHTML(item.src)}" alt="${escHTML(item.title)}" class="gallery-card-img" loading="lazy">
         </div>
         <div class="gallery-card-content">
-          <h3 class="gallery-card-title">${item.title}</h3>
-          <span class="gallery-card-category mono">${item.category}</span>
+          <h3 class="gallery-card-title">${escHTML(item.title)}</h3>
+          <span class="gallery-card-category mono">${escHTML(item.category)}</span>
         </div>
       </div>
     `).join('');
@@ -581,10 +588,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const shortcutTargets = {
     '1': '#origin',
     '2': '#about',
-    '3': '#fieldlog',
+    '3': '#education',
     '4': '#stack',
-    '5': '#education',
-    '6': '#certifications',
+    '5': '#certifications',
+    '6': '#fieldlog',
     '7': '#presence',
     '8': '#gallery',
     '9': '#connect'
@@ -665,6 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const formStatus = document.getElementById('form-status');
   const submitBtn = document.getElementById('contact-submit-btn');
 
+  let lastSubmitTime = 0;
   if (contactForm && formStatus && submitBtn) {
     const validateEmail = (email) => {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -672,6 +680,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     contactForm.addEventListener('submit', (e) => {
       e.preventDefault();
+
+      // Rate-limit: prevent rapid re-submission (5-second cooldown)
+      const now = Date.now();
+      if (now - lastSubmitTime < 5000) {
+        formStatus.style.display = '';
+        formStatus.className = 'form-status status-error';
+        formStatus.innerHTML = '<i class="fas fa-clock"></i><span>Please wait a few seconds before sending another message.</span>';
+        return;
+      }
 
       const nameInput = document.getElementById('contact-name');
       const emailInput = document.getElementById('contact-email');
@@ -712,6 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      lastSubmitTime = Date.now();
       submitBtn.disabled = true;
       const originalBtnContent = submitBtn.innerHTML;
       submitBtn.innerHTML = '<span>Sending...</span> <i class="fas fa-spinner fa-spin"></i>';
