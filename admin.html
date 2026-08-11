@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — Akash Verma Portfolio</title>
+  <meta name="robots" content="noindex, nofollow">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+
+<body class="admin-login-body">
+
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
+          </svg>
+        </div>
+        <h1 class="login-title">Admin Portal</h1>
+        <p class="login-subtitle mono">Akash Verma — Portfolio CMS</p>
+      </div>
+
+      <form id="login-form" class="login-form" novalidate>
+        <div class="login-field">
+          <label for="login-email" class="login-label">Email</label>
+          <div class="login-input-wrapper">
+            <i class="fas fa-envelope login-input-icon"></i>
+            <input type="email" id="login-email" name="email" required placeholder="admin@akku.com"
+              class="login-input" autocomplete="email">
+          </div>
+        </div>
+
+        <div class="login-field">
+          <label for="login-password" class="login-label">Password</label>
+          <div class="login-input-wrapper">
+            <i class="fas fa-lock login-input-icon"></i>
+            <input type="password" id="login-password" name="password" required placeholder="••••••••"
+              class="login-input" autocomplete="current-password">
+            <button type="button" id="toggle-password" class="login-toggle-pw" aria-label="Show password" tabindex="-1">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="login-error" class="login-error" aria-live="polite"></div>
+
+        <button type="submit" id="login-submit" class="login-btn">
+          <span>Sign In</span>
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <a href="index.html" class="login-back-link">
+          <i class="fas fa-arrow-left"></i>
+          <span>Back to Portfolio</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      // SHA-256 hash function
+      async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      // Pre-computed hashes
+      const VALID_EMAIL = 'admin@akku.com';
+      const VALID_PASS_HASH = '50cf58d2a2363ed8b4b6a27075e5667816a36811f6f2e1be012b396c15567746'; // sha256 verified
+
+      // Check if already logged in
+      if (sessionStorage.getItem('admin_session') === 'authenticated') {
+        window.location.href = 'admin-dashboard.html';
+        return;
+      }
+
+      const form = document.getElementById('login-form');
+      const errorEl = document.getElementById('login-error');
+      const submitBtn = document.getElementById('login-submit');
+      const togglePw = document.getElementById('toggle-password');
+      const pwInput = document.getElementById('login-password');
+
+      // Toggle password visibility
+      if (togglePw && pwInput) {
+        togglePw.addEventListener('click', () => {
+          const isPassword = pwInput.type === 'password';
+          pwInput.type = isPassword ? 'text' : 'password';
+          togglePw.querySelector('i').className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+        });
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl.textContent = '';
+        errorEl.className = 'login-error';
+
+        const email = document.getElementById('login-email').value.trim().toLowerCase();
+        const password = document.getElementById('login-password').value;
+
+        if (!email || !password) {
+          errorEl.textContent = 'Please enter both email and password.';
+          errorEl.className = 'login-error show';
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Authenticating...</span> <i class="fas fa-spinner fa-spin"></i>';
+
+        // Simulate brief auth delay
+        await new Promise(r => setTimeout(r, 600));
+
+        const passHash = await sha256(password);
+
+        if (email === VALID_EMAIL && passHash === VALID_PASS_HASH) {
+          sessionStorage.setItem('admin_session', 'authenticated');
+          sessionStorage.setItem('admin_email', email);
+          window.location.href = 'admin-dashboard.html';
+        } else {
+          errorEl.textContent = 'Invalid email or password. Please try again.';
+          errorEl.className = 'login-error show';
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Sign In</span> <i class="fas fa-arrow-right"></i>';
+        }
+      });
+    })();
+  </script>
+
+</body>
+
+</html>

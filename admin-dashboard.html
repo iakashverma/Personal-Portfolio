@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Admin Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+  <!-- Mobile Toggle -->
+  <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+    <i class="fas fa-bars"></i>
+  </button>
+
+  <div class="admin-dashboard">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
+          </svg>
+        </div>
+        <div class="sidebar-brand">
+          <span class="sidebar-brand-name">Admin Portal</span>
+          <span class="sidebar-brand-sub mono">Portfolio CMS</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="sidebar-nav-group">
+          <div class="sidebar-nav-label">Overview</div>
+          <button class="sidebar-nav-item active" data-section="dashboard">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </button>
+        </div>
+
+        <div class="sidebar-nav-group">
+          <div class="sidebar-nav-label">Content</div>
+          <button class="sidebar-nav-item" data-section="hero">
+            <i class="fas fa-bolt"></i>
+            <span>Hero</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="about">
+            <i class="fas fa-user"></i>
+            <span>About</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="projects">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="skills">
+            <i class="fas fa-cubes"></i>
+            <span>Skills</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="education">
+            <i class="fas fa-graduation-cap"></i>
+            <span>Education</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="certifications">
+            <i class="fas fa-certificate"></i>
+            <span>Certifications</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="presence">
+            <i class="fas fa-globe"></i>
+            <span>Presence</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="gallery">
+            <i class="fas fa-images"></i>
+            <span>Gallery</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="heroVisual">
+            <i class="fas fa-terminal"></i>
+            <span>Hero Visual</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="contact">
+            <i class="fas fa-envelope"></i>
+            <span>Contact</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="footer">
+            <i class="fas fa-ellipsis-h"></i>
+            <span>Footer</span>
+          </button>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="index.html" target="_blank" class="sidebar-footer-btn">
+          <i class="fas fa-external-link-alt"></i>
+          <span>View Portfolio</span>
+        </a>
+        <button class="sidebar-footer-btn logout-btn" id="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Sidebar overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="admin-main" id="admin-main">
+      <!-- Content rendered by admin.js -->
+    </main>
+
+  </div>
+
+  <!-- Toast -->
+  <div id="admin-toast" class="toast"></div>
+
+  <!-- Confirm Dialog -->
+  <div id="confirm-overlay" class="confirm-overlay">
+    <div class="confirm-dialog">
+      <div class="confirm-icon"><i class="fas fa-trash-alt"></i></div>
+      <h3 class="confirm-title" id="confirm-title">Delete Item?</h3>
+      <p class="confirm-text" id="confirm-text">This action cannot be undone.</p>
+      <div class="confirm-actions">
+        <button class="btn-admin btn-cancel" id="confirm-cancel">Cancel</button>
+        <button class="btn-admin btn-danger" id="confirm-ok"><i class="fas fa-trash-alt"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="edit-modal-overlay" class="edit-modal-overlay">
+    <div class="edit-modal">
+      <div class="edit-modal-header">
+        <span class="edit-modal-title" id="edit-modal-title">Edit Item</span>
+        <button class="edit-modal-close" id="edit-modal-close" aria-label="Close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="edit-modal-body" id="edit-modal-body"></div>
+      <div class="edit-modal-footer">
+        <button class="btn-admin btn-cancel" id="edit-modal-cancel">Cancel</button>
+        <button class="btn-admin btn-save" id="edit-modal-save"><i class="fas fa-check"></i> Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="admin.js"></script>
+
+</body>
+
+</html>

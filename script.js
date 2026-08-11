@@ -8,52 +8,202 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   // ==========================================
-  // 1. GALLERY DATASET (6 Items for 3x2 Grid)
+  // 1. GALLERY DATASET (from CMS Data Layer)
   // ==========================================
-  const galleryData = [
-    {
-      id: 'hackathon',
-      title: 'Tech Hackathon Collaboration',
-      category: 'Hackathons',
-      src: 'images/gallery_hackathon.png',
-      caption: 'Collaborating late night during a competitive hackathon session building real-time prediction pipelines.'
-    },
-    {
-      id: 'campus',
-      title: 'LPU University Campus Tech Block',
-      category: 'Campus Life',
-      src: 'images/gallery_lpu_campus.png',
-      caption: 'Campus atmosphere at Lovely Professional University, Punjab, pursuing Master of Computer Applications.'
-    },
-    {
-      id: 'workspace',
-      title: 'Developer Workstation Setup',
-      category: 'Engineering',
-      src: 'images/gallery_workspace.png',
-      caption: 'Primary dark-themed engineering workstation setup for architecting full-stack web software and AI models.'
-    },
-    {
-      id: 'presentation',
-      title: 'AI System Demo & Presentation',
-      category: 'Milestones',
-      src: 'images/gallery_ai_presentation.png',
-      caption: 'Presenting system architecture and machine learning algorithms.'
-    },
-    {
-      id: 'ai_lab',
-      title: 'AI & Data Engineering Research Lab',
-      category: 'Research',
-      src: 'images/gallery_ai_lab.png',
-      caption: 'Deep learning model training and data engineering experiments in the computing research lab.'
-    },
-    {
-      id: 'code_review',
-      title: 'Technical Architecture & Code Review',
-      category: 'Collaboration',
-      src: 'images/gallery_code_review.png',
-      caption: 'Collaborative code review session focusing on modular system design, database indexing, and API security.'
+  const galleryData = (typeof PortfolioData !== 'undefined' ? PortfolioData.get('gallery') : [])
+    .filter(item => item.enabled !== false);
+
+  // ==========================================
+  // 1.5. DYNAMIC CMS CONTENT RENDERER
+  // ==========================================
+  if (typeof PortfolioData !== 'undefined') {
+    const data = PortfolioData.getAll();
+
+    // --- Hero ---
+    const heroBadge = document.querySelector('.hero-badge');
+    if (heroBadge && data.hero.badge) {
+      heroBadge.innerHTML = `<span class="status-dot interactive"></span>${data.hero.badge}`;
     }
-  ];
+    const heroHeadline = document.querySelector('.hero-headline');
+    if (heroHeadline && data.hero.headline) {
+      heroHeadline.innerHTML = data.hero.headline;
+    }
+    const heroLead = document.querySelector('.hero-lead');
+    if (heroLead && data.hero.lead) {
+      heroLead.textContent = data.hero.lead;
+    }
+
+    // --- About ---
+    const aboutTitle = document.querySelector('#about .card-section-title');
+    if (aboutTitle && data.about.title) aboutTitle.textContent = data.about.title;
+    const aboutSub = document.querySelector('#about .card-section-sub');
+    if (aboutSub && data.about.subtitle) aboutSub.textContent = data.about.subtitle;
+
+    if (data.about.bio && data.about.bio.length) {
+      const bioParas = document.querySelectorAll('.about-bio p');
+      data.about.bio.forEach((pText, i) => {
+        if (bioParas[i]) bioParas[i].textContent = pText;
+      });
+    }
+
+    // --- Projects (Max 6 + Show More toggle) ---
+    const projectsGrid = document.querySelector('#fieldlog .card-grid');
+    const projectsContainer = document.querySelector('#fieldlog .container');
+    if (projectsGrid && data.projects.items && projectsContainer) {
+      const enabledProjects = data.projects.items.filter(p => p.enabled !== false);
+      if (enabledProjects.length) {
+        projectsGrid.innerHTML = enabledProjects.map((p, index) => `
+          <article class="feature-card project-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
+            <div class="feature-card-icon">
+              <i class="${p.icon || 'fas fa-cube'}"></i>
+            </div>
+            <h3 class="feature-card-title">${p.title}</h3>
+            <p class="feature-card-desc">${p.description}</p>
+            <div class="project-actions">
+              ${p.githubUrl ? `<a href="${p.githubUrl}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">GitHub</a>` : ''}
+              ${p.demoUrl ? `<a href="${p.demoUrl}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>` : ''}
+            </div>
+          </article>
+        `).join('');
+
+        // Clean up previous toggle container if any
+        const oldProjectToggle = projectsContainer.querySelector('.section-toggle-wrapper[data-for="projects"]');
+        if (oldProjectToggle) oldProjectToggle.remove();
+
+        if (enabledProjects.length > 6) {
+          const toggleWrap = document.createElement('div');
+          toggleWrap.className = 'section-toggle-wrapper';
+          toggleWrap.setAttribute('data-for', 'projects');
+          toggleWrap.innerHTML = `
+            <button type="button" class="btn-show-toggle">
+              <span>Show More</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+          `;
+          projectsContainer.appendChild(toggleWrap);
+
+          const toggleBtn = toggleWrap.querySelector('.btn-show-toggle');
+          let isExpanded = false;
+
+          toggleBtn.addEventListener('click', () => {
+            isExpanded = !isExpanded;
+            const extraCards = projectsGrid.querySelectorAll('.project-card.is-hidden-card');
+            extraCards.forEach(card => {
+              card.classList.toggle('is-visible-card', isExpanded);
+            });
+            toggleBtn.querySelector('span').textContent = isExpanded ? 'Show Less' : 'Show More';
+            toggleBtn.querySelector('i').className = isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+          });
+        }
+      }
+    }
+
+    // --- Skills ---
+    const skillsGrid = document.querySelector('#stack .skills-grid');
+    if (skillsGrid && data.skills.categories) {
+      const enabledSkills = data.skills.categories.filter(s => s.enabled !== false);
+      if (enabledSkills.length) {
+        skillsGrid.innerHTML = enabledSkills.map(s => `
+          <div class="skills-card" tabindex="0">
+            <div class="skills-card-header">
+              <i class="${s.icon || 'fas fa-code'}"></i>
+              <h3>${s.name}</h3>
+            </div>
+            <div class="skills-tags">
+              ${(s.tags || []).map(t => `<span class="skill-tag">${t}</span>`).join('')}
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // --- Education ---
+    const eduGrid = document.querySelector('#education .timeline-grid');
+    if (eduGrid && data.education.items) {
+      const enabledEdu = data.education.items.filter(e => e.enabled !== false);
+      if (enabledEdu.length) {
+        eduGrid.innerHTML = enabledEdu.map(e => `
+          <div class="timeline-card" tabindex="0">
+            <div class="timeline-card-top">
+              <div class="timeline-icon">
+                <i class="${e.icon || 'fas fa-graduation-cap'}"></i>
+              </div>
+              <span class="timeline-badge">${e.badge}</span>
+            </div>
+            <div class="timeline-body">
+              <div class="timeline-header">
+                <h3 class="timeline-degree">${e.degree}</h3>
+                <span class="timeline-level">${e.level}</span>
+                <span class="timeline-org">${e.org}</span>
+              </div>
+              <p class="timeline-desc">${e.description}</p>
+              <div class="timeline-highlights">
+                ${(e.highlights || []).map(h => `<span class="highlight-tag mono"><i class="fas fa-check"></i> ${h}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // --- Certifications (Max 6 + Show More toggle) ---
+    const certsGrid = document.querySelector('#certifications .card-grid');
+    const certsContainer = document.querySelector('#certifications .container');
+    if (certsGrid && data.certifications.items && certsContainer) {
+      const enabledCerts = data.certifications.items.filter(c => c.enabled !== false);
+      if (enabledCerts.length) {
+        certsGrid.innerHTML = enabledCerts.map((c, index) => `
+          <article class="feature-card cert-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
+            <div class="feature-card-icon">
+              <i class="${c.icon || 'fas fa-certificate'}"></i>
+            </div>
+            <h3 class="feature-card-title">${c.title}</h3>
+            <p class="feature-card-desc">${c.description}</p>
+            <a href="${c.url || '#'}" target="_blank" rel="noopener noreferrer" class="btn-view-cert">
+              <span>View Certificate</span>
+              <span class="cert-arrow">→</span>
+            </a>
+          </article>
+        `).join('');
+
+        // Clean up previous toggle container if any
+        const oldCertToggle = certsContainer.querySelector('.section-toggle-wrapper[data-for="certifications"]');
+        if (oldCertToggle) oldCertToggle.remove();
+
+        if (enabledCerts.length > 6) {
+          const toggleWrap = document.createElement('div');
+          toggleWrap.className = 'section-toggle-wrapper';
+          toggleWrap.setAttribute('data-for', 'certifications');
+          toggleWrap.innerHTML = `
+            <button type="button" class="btn-show-toggle">
+              <span>Show More</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+          `;
+          certsContainer.appendChild(toggleWrap);
+
+          const toggleBtn = toggleWrap.querySelector('.btn-show-toggle');
+          let isExpanded = false;
+
+          toggleBtn.addEventListener('click', () => {
+            isExpanded = !isExpanded;
+            const extraCards = certsGrid.querySelectorAll('.cert-card.is-hidden-card');
+            extraCards.forEach(card => {
+              card.classList.toggle('is-visible-card', isExpanded);
+            });
+            toggleBtn.querySelector('span').textContent = isExpanded ? 'Show Less' : 'Show More';
+            toggleBtn.querySelector('i').className = isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+          });
+        }
+      }
+    }
+
+    // --- Footer ---
+    const footerDesc = document.querySelector('.footer-brand-desc');
+    if (footerDesc && data.footer.description) footerDesc.textContent = data.footer.description;
+    const footerCopy = document.querySelector('.footer-copyright');
+    if (footerCopy && data.footer.copyright) footerCopy.textContent = data.footer.copyright;
+  }
 
   // ==========================================
   // 2. HEADER SCROLL STATE
@@ -755,8 +905,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabLangEl = document.querySelector('.visual-tab span:nth-of-type(2)');
 
   if (codeContainer) {
+    // --- FETCH SNIPPETS FROM CMS DATA LAYER ---
+    const cmsHvData = typeof PortfolioData !== 'undefined' ? PortfolioData.get('heroVisual') : null;
+
     // --- CATEGORY A: GREETING ---
-    const greetingSnippet = {
+    const greetingSnippet = cmsHvData?.greeting || {
       lang: 'GREETING.JS',
       question: '"Welcome to my portfolio!"',
       answer: 'Real-time developer console output & greeting statement.',
@@ -767,7 +920,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- CATEGORY B: ABOUT ME ---
-    const aboutSnippet = {
+    const aboutSnippet = cmsHvData?.aboutMe || {
       lang: 'ABOUT_ME.TS',
       question: '"Who is Akash Verma?"',
       answer: 'Developer working across AI/ML, Data Science, and Web Engineering.',
@@ -782,17 +935,21 @@ document.addEventListener('DOMContentLoaded', () => {
       ]
     };
 
-    // --- CATEGORY C: MOTIVATIONAL QUOTES (EXACTLY 2) ---
-    const motivationalQuotes = [
-      "Great things take time. Keep building.",
-      "Keep learning. Keep building. Keep growing."
-    ];
+    // --- CATEGORY C: MOTIVATIONAL QUOTES ---
+    const motivationalQuotes = cmsHvData?.motivationalQuotes
+      ? cmsHvData.motivationalQuotes.filter(q => q.enabled !== false).map(q => q.text)
+      : [
+        "Great things take time. Keep building.",
+        "Keep learning. Keep building. Keep growing."
+      ];
 
-    // --- CATEGORY C: FUNNY DEVELOPER QUOTES (EXACTLY 2) ---
-    const funnyQuotes = [
-      "It works on my machine.",
-      "I don't have bugs. I have unexpected features."
-    ];
+    // --- CATEGORY C: FUNNY DEVELOPER QUOTES ---
+    const funnyQuotes = cmsHvData?.funnyQuotes
+      ? cmsHvData.funnyQuotes.filter(q => q.enabled !== false).map(q => q.text)
+      : [
+        "It works on my machine.",
+        "I don't have bugs. I have unexpected features."
+      ];
 
     let activeTimeoutId = null;
     let isTypingActive = true;

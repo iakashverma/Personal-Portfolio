@@ -316,6 +316,20 @@ body.cursor-ready .cursor-ring {
   font-size: 12px;
 }
 
+.header-admin-btn {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.header-admin-btn:hover {
+  color: var(--status-amber);
+  background: rgba(255, 167, 38, 0.08);
+}
+
+.header-admin-btn i {
+  font-size: 11px;
+}
+
 /* Status Indicator Dot */
 .status-dot {
   width: 8px;
@@ -2591,3 +2605,155 @@ body.cursor-ready .cursor-ring {
     transform: none;
   }
 }
+
+/* ==========================================================================
+   VIEW CERTIFICATE BUTTON (Pill-style matching design)
+   ========================================================================== */
+.cert-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.cert-card .feature-card-desc {
+  flex: 1;
+  margin-bottom: 20px;
+}
+
+.btn-view-cert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 20px;
+  border-radius: 50px;
+  background: rgba(245, 245, 245, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: var(--font-display);
+  text-decoration: none;
+  transition: background 0.25s var(--ease), border-color 0.25s var(--ease), color 0.25s var(--ease), transform 0.2s var(--ease), box-shadow 0.25s var(--ease);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.btn-view-cert .cert-arrow {
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 0.25s var(--ease);
+}
+
+.btn-view-cert:hover {
+  background: rgba(245, 245, 245, 0.14);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.btn-view-cert:hover .cert-arrow {
+  transform: translateX(4px);
+}
+
+/* ==========================================================================
+   PROJECT CARD ACTION BUTTONS (GitHub & Live Demo Pill Buttons)
+   ========================================================================== */
+.project-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.project-card .feature-card-desc {
+  flex: 1;
+  margin-bottom: 20px;
+}
+
+.project-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-project-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  border-radius: 50px;
+  background: rgba(245, 245, 245, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-display);
+  text-decoration: none;
+  transition: background 0.25s var(--ease), border-color 0.25s var(--ease), color 0.25s var(--ease), transform 0.2s var(--ease), box-shadow 0.25s var(--ease);
+  cursor: pointer;
+}
+
+.btn-project-pill:hover {
+  background: rgba(245, 245, 245, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* ==========================================================================
+   SHOW MORE / SHOW LESS CARD VISIBILITY TOGGLE STYLES
+   ========================================================================== */
+.feature-card.is-hidden-card {
+  display: none !important;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.35s var(--ease), transform 0.35s var(--ease);
+}
+
+.feature-card.is-hidden-card.is-visible-card {
+  display: flex !important;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.section-toggle-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+  width: 100%;
+}
+
+.btn-show-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 28px;
+  border-radius: 50px;
+  background: rgba(245, 245, 245, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-display);
+  cursor: pointer;
+  transition: background 0.25s var(--ease), border-color 0.25s var(--ease), color 0.25s var(--ease), transform 0.2s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.btn-show-toggle:hover {
+  background: rgba(245, 245, 245, 0.12);
+  border-color: var(--status-green);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.15);
+}
+
+.btn-show-toggle i {
+  font-size: 12px;
+  color: var(--status-green);
+  transition: transform 0.25s var(--ease);
+}
+
+
+
