@@ -2894,5 +2894,233 @@ body.cursor-ready .cursor-ring {
   }
 }
 
+/* ==========================================================================
+   PORTFOLIO INTRO GREETING SCREEN (3s Developer Sequence)
+   ========================================================================== */
+body.intro-active {
+  overflow: hidden !important;
+  height: 100vh;
+}
+
+.intro-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background-color: #08090b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 24px;
+  overflow: hidden;
+  user-select: none;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.intro-glow-backdrop {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.14) 0%, rgba(6, 182, 212, 0.07) 35%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  animation: introGlowBreathe 3s infinite alternate ease-in-out;
+}
+
+@keyframes introGlowBreathe {
+  0% { transform: scale(0.9) translate3d(0, 0, 0); opacity: 0.7; }
+  100% { transform: scale(1.15) translate3d(0, 0, 0); opacity: 1; }
+}
+
+.intro-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 36px 36px;
+  background-position: center center;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Floating Developer Tokens */
+.intro-floating-code {
+  position: absolute;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 4px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(4px);
+}
+
+.f-code-1 { top: 18%; left: 12%; animation: floatDrift1 4s infinite alternate ease-in-out; }
+.f-code-2 { top: 22%; right: 14%; animation: floatDrift2 5s infinite alternate ease-in-out; }
+.f-code-3 { bottom: 20%; left: 15%; animation: floatDrift2 4.5s infinite alternate ease-in-out; }
+.f-code-4 { bottom: 24%; right: 12%; animation: floatDrift1 5.5s infinite alternate ease-in-out; }
+
+@keyframes floatDrift1 {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0.2; }
+  100% { transform: translateY(-14px) rotate(2deg); opacity: 0.45; }
+}
+
+@keyframes floatDrift2 {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0.2; }
+  100% { transform: translateY(14px) rotate(-2deg); opacity: 0.45; }
+}
+
+.intro-screen.is-hidden {
+  opacity: 0;
+  transform: scale(1.04);
+  filter: blur(6px);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.intro-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 90vw;
+  position: relative;
+  z-index: 2;
+}
+
+.intro-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.intro-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-green, #10b981);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.9);
+  animation: introBeacon 0.9s infinite ease-in-out;
+}
+
+@keyframes introBeacon {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.35); opacity: 1; box-shadow: 0 0 18px rgba(16, 185, 129, 1); }
+}
+
+.intro-sys-tag {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #9ca3af);
+  text-transform: uppercase;
+}
+
+.intro-counter-accent {
+  color: var(--status-green, #10b981);
+  font-weight: 700;
+}
+
+.intro-greeting-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 90px;
+  padding: 10px;
+}
+
+.intro-text-glow {
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.18) 0%, transparent 70%);
+  filter: blur(20px);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.intro-text {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-display, 'Inter'), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Gurmukhi', 'Noto Sans Bengali', 'Noto Sans Gujarati', 'Noto Sans Arabic', sans-serif;
+  font-size: clamp(30px, 5.8vw, 56px);
+  font-weight: 800;
+  color: var(--text-primary, #f1f3f5);
+  letter-spacing: -0.025em;
+  line-height: 1.22;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  transform: translateY(6px) scale(0.98);
+  transition: opacity 0.08s cubic-bezier(0.16, 1, 0.3, 1), transform 0.08s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+  will-change: opacity, transform;
+}
+
+.intro-text.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.intro-text.is-exiting {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+}
+
+.intro-text.final-text {
+  background: linear-gradient(135deg, #ffffff 0%, #34d399 45%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 24px rgba(16, 185, 129, 0.45));
+}
+
+.intro-cursor {
+  position: relative;
+  z-index: 2;
+  display: inline-block;
+  width: 3px;
+  height: clamp(26px, 4.8vw, 44px);
+  background: var(--status-green, #10b981);
+  border-radius: 1px;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+  animation: introCursorBlink 0.4s infinite alternate ease-in-out;
+}
+
+@keyframes introCursorBlink {
+  0% { opacity: 0.2; }
+  100% { opacity: 1; }
+}
+
+.intro-progress-bar {
+  width: 160px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 26px;
+}
+
+.intro-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #10b981 0%, #06b6d4 100%);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+  transition: width 2.4s cubic-bezier(0.12, 0.88, 0.32, 1);
+}
+
 
 

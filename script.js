@@ -8,6 +8,118 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   // ==========================================
+  // 0. PORTFOLIO INTRO GREETING SEQUENCE (Premium 3s Developer Sequence)
+  // ==========================================
+  const initIntroScreen = () => {
+    const introScreen = document.getElementById('intro-screen');
+    const introText = document.getElementById('intro-text');
+    const progressFill = document.getElementById('intro-progress-fill');
+    const counterEl = document.getElementById('intro-counter');
+    const glowEl = document.getElementById('intro-text-glow');
+    if (!introScreen || !introText) return;
+
+    const greetings = [
+      'Hello',
+      'नमस्ते',
+      'ਸਤ ਸ੍ਰੀ ਅਕਾਲ',
+      'নমস্কার',
+      'નમસ્તે',
+      'السلام علیکم',
+      'नमः',
+      'Welcome',
+      'Let’s build something together.'
+    ];
+
+    document.body.classList.add('intro-active');
+
+    // Progress Line & Counter Animation (0% to 100% over ~2.4s)
+    if (progressFill) {
+      requestAnimationFrame(() => {
+        progressFill.style.width = '100%';
+      });
+    }
+
+    let progressCount = 0;
+    const countInterval = setInterval(() => {
+      progressCount += Math.floor(Math.random() * 4) + 2;
+      if (progressCount >= 100) {
+        progressCount = 100;
+        clearInterval(countInterval);
+        if (counterEl) counterEl.textContent = '100% READY';
+      } else {
+        if (counterEl) counterEl.textContent = `${progressCount}%`;
+      }
+    }, 55);
+
+    // Fast-paced calibrated durations (ms) completing within 3s total:
+    // Greetings 0-6: 150ms each (1050ms)
+    // Greeting 7 ("Welcome"): 220ms (1270ms)
+    // Greeting 8 ("Let’s build something together."): 900ms (2170ms)
+    // Exit aperture transition: 400ms -> Total = ~2.6s - 2.8s
+    const stepDurations = [150, 150, 150, 150, 150, 150, 150, 220, 900];
+    const scrambleChars = '!/[]<>_{}—=+*^#01';
+
+    let current = 0;
+
+    const renderWithScramble = (targetText, isFinal) => {
+      if (isFinal) {
+        introText.classList.add('final-text');
+        if (glowEl) glowEl.style.opacity = '1';
+      }
+
+      // Quick 1-frame micro-decoder flicker for developer aesthetic
+      const len = targetText.length;
+      let scrambled = '';
+      for (let i = 0; i < Math.min(len, 8); i++) {
+        scrambled += scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+      }
+
+      introText.textContent = scrambled;
+      introText.classList.remove('is-exiting');
+      introText.classList.add('is-visible');
+
+      setTimeout(() => {
+        introText.textContent = targetText;
+      }, 25);
+    };
+
+    const nextGreeting = () => {
+      if (current >= greetings.length) {
+        // Complete intro sequence smoothly with scale aperture blur
+        introScreen.classList.add('is-hidden');
+        document.body.classList.remove('intro-active');
+        setTimeout(() => {
+          if (introScreen.parentNode) {
+            introScreen.parentNode.removeChild(introScreen);
+          }
+        }, 450);
+        return;
+      }
+
+      const isFinal = current === greetings.length - 1;
+      renderWithScramble(greetings[current], isFinal);
+
+      const duration = stepDurations[current] || 150;
+      const fadeLead = Math.min(40, duration * 0.25);
+
+      setTimeout(() => {
+        if (!isFinal) {
+          introText.classList.remove('is-visible');
+          introText.classList.add('is-exiting');
+        }
+        setTimeout(() => {
+          current++;
+          nextGreeting();
+        }, fadeLead);
+      }, duration - fadeLead);
+    };
+
+    nextGreeting();
+  };
+
+  initIntroScreen();
+
+  // ==========================================
   // 1. GALLERY DATASET (from CMS Data Layer)
   // ==========================================
   const galleryData = (typeof PortfolioData !== 'undefined' ? PortfolioData.get('gallery') : [])
