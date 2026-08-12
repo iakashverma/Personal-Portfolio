@@ -540,7 +540,7 @@
       </div>
     `;
 
-    document.getElementById('hero-save').addEventListener('click', () => {
+    document.getElementById('hero-save').addEventListener('click', async () => {
       const updated = {
         badge: document.getElementById('hero-badge').value.trim(),
         headline: document.getElementById('hero-headline').value.trim(),
@@ -556,16 +556,16 @@
           icon: data.ctaSecondary.icon
         }
       };
-      PortfolioData.set('hero', updated);
-      showToast('Hero section saved successfully.');
+      const res = await PortfolioData.setAsync('hero', updated);
+      handleSaveResult(res, 'Hero section saved & synchronized globally!');
       renderHero();
     });
 
     document.getElementById('hero-reset').addEventListener('click', () => {
-      showConfirm('Reset Hero?', 'This will revert to default hero content.', () => {
-        PortfolioData.reset('hero');
+      showConfirm('Reset Hero?', 'This will revert to default hero content.', async () => {
+        const res = await PortfolioData.resetAsync('hero');
+        handleResetResult(res, 'Hero section reset to default!');
         renderHero();
-        showToast('Hero section reset to default.');
       });
     });
   };
@@ -746,7 +746,7 @@
       });
     }
 
-    document.getElementById('about-save').addEventListener('click', () => {
+    document.getElementById('about-save').addEventListener('click', async () => {
       const updated = {
         title: document.getElementById('about-title').value.trim(),
         subtitle: document.getElementById('about-subtitle').value.trim(),
@@ -762,16 +762,16 @@
           sub: document.querySelectorAll('.hl-sub')[i].value.trim()
         }))
       };
-      PortfolioData.set('about', updated);
-      showToast('About section saved successfully.');
+      const res = await PortfolioData.setAsync('about', updated);
+      handleSaveResult(res, 'About section saved & synchronized globally!');
       renderAbout();
     });
 
     document.getElementById('about-reset').addEventListener('click', () => {
-      showConfirm('Reset About?', 'This will revert to default about content.', () => {
-        PortfolioData.reset('about');
+      showConfirm('Reset About?', 'This will revert to default about content.', async () => {
+        const res = await PortfolioData.resetAsync('about');
+        handleResetResult(res, 'About section reset to default!');
         renderAbout();
-        showToast('About section reset to default.');
       });
     });
   };
@@ -948,26 +948,26 @@
       openEditModal(cfg, items, items.length - 1);
     });
 
-    const saveListAndRerender = () => {
+    const saveListAndRerender = async () => {
       data[cfg.listKey] = items;
       data.title = document.getElementById('list-sec-title').value.trim();
       data.subtitle = document.getElementById('list-sec-subtitle').value.trim();
-      PortfolioData.set(sectionKey, data);
+      const res = await PortfolioData.setAsync(sectionKey, data);
+      handleSaveResult(res, `${cfg.title} saved & synchronized globally!`);
       renderListSection(sectionKey);
     };
 
     // Save
     document.getElementById('list-save').addEventListener('click', () => {
       saveListAndRerender();
-      showToast(`${cfg.title} saved successfully.`);
     });
 
     // Reset
     document.getElementById('list-reset').addEventListener('click', () => {
-      showConfirm(`Reset ${cfg.title}?`, 'All changes will be lost.', () => {
-        PortfolioData.reset(sectionKey);
+      showConfirm(`Reset ${cfg.title}?`, 'All changes will be lost.', async () => {
+        const res = await PortfolioData.resetAsync(sectionKey);
+        handleResetResult(res, `${cfg.title} reset to default!`);
         renderListSection(sectionKey);
-        showToast(`${cfg.title} reset to default.`);
       });
     });
 
@@ -1084,16 +1084,21 @@
       editPlatform(data.platforms.length - 1);
     });
 
-    const savePres = () => {
+    const savePres = async () => {
       data.title = document.getElementById('pres-title').value.trim();
       data.subtitle = document.getElementById('pres-subtitle').value.trim();
-      PortfolioData.set('presence', data);
+      const res = await PortfolioData.setAsync('presence', data);
+      handleSaveResult(res, 'Developer Presence saved & synchronized globally!');
       renderPresence();
     };
 
-    document.getElementById('pres-save').addEventListener('click', () => { savePres(); showToast('Presence saved.'); });
+    document.getElementById('pres-save').addEventListener('click', () => { savePres(); });
     document.getElementById('pres-reset').addEventListener('click', () => {
-      showConfirm('Reset Presence?', 'All changes will be lost.', () => { PortfolioData.reset('presence'); renderPresence(); showToast('Reset to default.'); });
+      showConfirm('Reset Presence?', 'All changes will be lost.', async () => {
+        const res = await PortfolioData.resetAsync('presence');
+        handleResetResult(res, 'Presence reset to default!');
+        renderPresence();
+      });
     });
 
     const editPlatform = (idx) => {
@@ -1179,11 +1184,19 @@
       editGalItem(data.length - 1);
     });
 
-    const saveGal = () => { PortfolioData.set('gallery', data); renderGallery(); };
+    const saveGal = async () => {
+      const res = await PortfolioData.setAsync('gallery', data);
+      handleSaveResult(res, 'Gallery saved & synchronized globally!');
+      renderGallery();
+    };
 
-    document.getElementById('gal-save').addEventListener('click', () => { saveGal(); showToast('Gallery saved.'); });
+    document.getElementById('gal-save').addEventListener('click', () => { saveGal(); });
     document.getElementById('gal-reset').addEventListener('click', () => {
-      showConfirm('Reset Gallery?', 'All changes will be lost.', () => { PortfolioData.reset('gallery'); renderGallery(); showToast('Reset.'); });
+      showConfirm('Reset Gallery?', 'All changes will be lost.', async () => {
+        const res = await PortfolioData.resetAsync('gallery');
+        handleResetResult(res, 'Gallery reset to default!');
+        renderGallery();
+      });
     });
 
     const editGalItem = (idx) => {
@@ -1290,20 +1303,25 @@
     document.getElementById('hv-add-mq').addEventListener('click', () => { data.motivationalQuotes.push({ text: 'New motivational quote.', enabled: true }); saveHV(); });
     document.getElementById('hv-add-fq').addEventListener('click', () => { data.funnyQuotes.push({ text: 'New funny quote.', enabled: true }); saveHV(); });
 
-    const saveHV = () => {
+    const saveHV = async () => {
       // Read current text values
       document.querySelectorAll('.mq-text').forEach((el, i) => { if (data.motivationalQuotes[i]) data.motivationalQuotes[i].text = el.value.trim(); });
       document.querySelectorAll('.fq-text').forEach((el, i) => { if (data.funnyQuotes[i]) data.funnyQuotes[i].text = el.value.trim(); });
       data.greeting.question = document.getElementById('hv-greet-q')?.value.trim() || data.greeting.question;
       data.greeting.answer = document.getElementById('hv-greet-a')?.value.trim() || data.greeting.answer;
       data.greeting.caption = document.getElementById('hv-greet-cap')?.value.trim() || data.greeting.caption;
-      PortfolioData.set('heroVisual', data);
+      const res = await PortfolioData.setAsync('heroVisual', data);
+      handleSaveResult(res, 'Hero Visual saved & synchronized globally!');
       renderHeroVisual();
     };
 
-    document.getElementById('hv-save').addEventListener('click', () => { saveHV(); showToast('Hero Visual saved.'); });
+    document.getElementById('hv-save').addEventListener('click', () => { saveHV(); });
     document.getElementById('hv-reset').addEventListener('click', () => {
-      showConfirm('Reset Hero Visual?', 'All custom snippets will be lost.', () => { PortfolioData.reset('heroVisual'); renderHeroVisual(); showToast('Reset.'); });
+      showConfirm('Reset Hero Visual?', 'All custom snippets will be lost.', async () => {
+        const res = await PortfolioData.resetAsync('heroVisual');
+        handleResetResult(res, 'Hero Visual reset to default!');
+        renderHeroVisual();
+      });
     });
   };
 
@@ -1427,7 +1445,7 @@
       });
     };
 
-    const saveCt = () => {
+    const saveCt = async () => {
       data.title = document.getElementById('ct-title')?.value.trim() || data.title;
       data.subtitle = document.getElementById('ct-subtitle')?.value.trim() || data.subtitle;
       data.email = document.getElementById('ct-email')?.value.trim() || data.email;
@@ -1435,17 +1453,21 @@
       data.mapLocation = document.getElementById('ct-maploc')?.value.trim() || data.mapLocation;
       data.mapEmbedUrl = document.getElementById('ct-mapembed')?.value.trim() || data.mapEmbedUrl;
       data.mapLink = document.getElementById('ct-maplink')?.value.trim() || data.mapLink;
-      PortfolioData.set('contact', data);
+      const res = await PortfolioData.setAsync('contact', data);
+      handleSaveResult(res, 'Contact section saved & synchronized globally!');
       renderContact();
     };
 
     document.getElementById('ct-save').addEventListener('click', () => {
       saveCt();
-      showToast('Contact section saved.');
     });
 
     document.getElementById('ct-reset').addEventListener('click', () => {
-      showConfirm('Reset Contact?', 'All changes will be lost.', () => { PortfolioData.reset('contact'); renderContact(); showToast('Reset.'); });
+      showConfirm('Reset Contact?', 'All changes will be lost.', async () => {
+        const res = await PortfolioData.resetAsync('contact');
+        handleResetResult(res, 'Contact section reset to default!');
+        renderContact();
+      });
     });
 
     // Message actions in contact editor
@@ -1542,16 +1564,21 @@
       editFtLink(data.socialLinks.length - 1);
     });
 
-    const saveFt = () => {
+    const saveFt = async () => {
       data.description = document.getElementById('ft-desc')?.value.trim() || data.description;
       data.copyright = document.getElementById('ft-copy')?.value.trim() || data.copyright;
-      PortfolioData.set('footer', data);
+      const res = await PortfolioData.setAsync('footer', data);
+      handleSaveResult(res, 'Footer saved & synchronized globally!');
       renderFooter();
     };
 
-    document.getElementById('ft-save').addEventListener('click', () => { saveFt(); showToast('Footer saved.'); });
+    document.getElementById('ft-save').addEventListener('click', () => { saveFt(); });
     document.getElementById('ft-reset').addEventListener('click', () => {
-      showConfirm('Reset Footer?', 'All changes will be lost.', () => { PortfolioData.reset('footer'); renderFooter(); showToast('Reset.'); });
+      showConfirm('Reset Footer?', 'All changes will be lost.', async () => {
+        const res = await PortfolioData.resetAsync('footer');
+        handleResetResult(res, 'Footer reset to default!');
+        renderFooter();
+      });
     });
 
     const editFtLink = (idx) => {

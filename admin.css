@@ -1,3 +1,5 @@
+/* Admin CSS File */
+
 /* ==========================================================================
    ADMIN PORTAL — STYLE SYSTEM
    Reuses portfolio design tokens for visual consistency.
@@ -26,8 +28,15 @@
 }
 
 /* ---------- Reset ---------- */
-*, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
 
 body {
   margin: 0;
@@ -41,7 +50,9 @@ body {
   overflow-x: hidden;
 }
 
-.mono { font-family: var(--font-mono); }
+.mono {
+  font-family: var(--font-mono);
+}
 
 /* ==========================================================================
    LOGIN PAGE
@@ -167,7 +178,9 @@ body {
   transition: color 0.2s;
 }
 
-.login-toggle-pw:hover { color: var(--text-secondary); }
+.login-toggle-pw:hover {
+  color: var(--text-secondary);
+}
 
 .login-error {
   font-size: 13px;
@@ -228,7 +241,9 @@ body {
   transition: color 0.2s;
 }
 
-.login-back-link:hover { color: var(--text-secondary); }
+.login-back-link:hover {
+  color: var(--text-secondary);
+}
 
 /* ==========================================================================
    DASHBOARD LAYOUT
@@ -342,14 +357,18 @@ body {
   color: var(--text-primary);
 }
 
-.sidebar-nav-item:hover i { color: var(--text-secondary); }
+.sidebar-nav-item:hover i {
+  color: var(--text-secondary);
+}
 
 .sidebar-nav-item.active {
   background: rgba(16, 185, 129, 0.1);
   color: var(--status-green);
 }
 
-.sidebar-nav-item.active i { color: var(--status-green); }
+.sidebar-nav-item.active i {
+  color: var(--status-green);
+}
 
 .badge-count {
   margin-left: auto;
@@ -487,7 +506,9 @@ body {
   transition: border-color 0.2s;
 }
 
-.overview-card:hover { border-color: var(--border-hover); }
+.overview-card:hover {
+  border-color: var(--border-hover);
+}
 
 .overview-card-icon {
   width: 36px;
@@ -567,7 +588,9 @@ body {
   margin-bottom: 18px;
 }
 
-.field-group:last-child { margin-bottom: 0; }
+.field-group:last-child {
+  margin-bottom: 0;
+}
 
 .field-label {
   display: block;
@@ -632,8 +655,15 @@ body {
   transition: transform 0.15s, background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
-.btn-admin:hover { transform: translateY(-1px); }
-.btn-admin:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-admin:hover {
+  transform: translateY(-1px);
+}
+
+.btn-admin:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
 
 .btn-save {
   background: var(--status-green);
@@ -641,7 +671,9 @@ body {
   border-color: var(--status-green);
 }
 
-.btn-save:hover { box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3); }
+.btn-save:hover {
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
 
 .btn-cancel {
   background: transparent;
@@ -649,7 +681,10 @@ body {
   border-color: var(--border);
 }
 
-.btn-cancel:hover { border-color: var(--border-hover); color: var(--text-primary); }
+.btn-cancel:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
 
 .btn-danger {
   background: transparent;
@@ -695,7 +730,9 @@ body {
   transition: border-color 0.2s;
 }
 
-.editor-list-item:hover { border-color: var(--border-hover); }
+.editor-list-item:hover {
+  border-color: var(--border-hover);
+}
 
 .editor-list-item-content {
   flex: 1;
@@ -785,11 +822,11 @@ body {
   transition: transform 0.2s, background 0.2s;
 }
 
-.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked+.toggle-slider {
   background: var(--status-green);
 }
 
-.toggle-switch input:checked + .toggle-slider::before {
+.toggle-switch input:checked+.toggle-slider::before {
   transform: translateX(16px);
   background: #000;
 }
@@ -961,7 +998,9 @@ body {
   color: var(--text-primary);
 }
 
-.edit-modal-body { padding: 22px; }
+.edit-modal-body {
+  padding: 22px;
+}
 
 .edit-modal-footer {
   padding: 14px 22px;
@@ -994,7 +1033,9 @@ body {
    RESPONSIVE
    ========================================================================== */
 @media (max-width: 900px) {
-  .sidebar-toggle { display: flex; }
+  .sidebar-toggle {
+    display: flex;
+  }
 
   .admin-sidebar {
     transform: translateX(-100%);
@@ -1004,7 +1045,9 @@ body {
     transform: translateX(0);
   }
 
-  .sidebar-overlay.show { display: block; }
+  .sidebar-overlay.show {
+    display: block;
+  }
 
   .admin-main {
     margin-left: 0;
@@ -1237,4 +1280,3 @@ body {
     border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
 }
-

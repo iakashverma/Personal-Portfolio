@@ -1,4 +1,4 @@
-# Akash Verma — Personal Portfolio
+<!-- Akash Verma — Personal Portfolio -->
 
 A modern, responsive personal portfolio website for **Akash Verma**, focused on AI/ML, Data, and Web Development.
 

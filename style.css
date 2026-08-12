@@ -1,3 +1,5 @@
+/* Css file */
+
 /* ==========================================================================
    AKASH VERMA — PORTFOLIO STYLE SYSTEM
    Theme: Dark, Minimal, Editorial / Technical
@@ -52,7 +54,9 @@
 }
 
 /* ---------- Reset & Base ---------- */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -72,7 +76,13 @@ body {
   overflow-x: hidden;
 }
 
-h1, h2, h3, h4, p, ul, figure {
+h1,
+h2,
+h3,
+h4,
+p,
+ul,
+figure {
   margin: 0;
 }
 
@@ -139,9 +149,9 @@ button {
   z-index: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,255,255,0.05), transparent 60%),
-    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 255, 255, 0.05), transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
   background-size: auto, 64px 64px, 64px 64px;
   opacity: 0.6;
 }
@@ -237,7 +247,7 @@ body.cursor-ready .cursor-ring {
   width: 1px;
   height: 20px;
   flex-shrink: 0;
-  background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.25), transparent);
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.25), transparent);
 }
 
 .command-item {
@@ -347,9 +357,17 @@ body.cursor-ready .cursor-ring {
 }
 
 @keyframes pulse-green {
-  0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
-  70%  { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
+  }
+
+  70% {
+    box-shadow: 0 0 0 7px rgba(16, 185, 129, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
 }
 
 /* Mobile Toggle */
@@ -460,6 +478,31 @@ body.cursor-ready .cursor-ring {
   border-color: rgba(16, 185, 129, 0.25);
 }
 
+.mobile-nav .mobile-nav-admin {
+  margin-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-top: 12px;
+}
+
+.mobile-nav .mobile-nav-admin a {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.mobile-nav .mobile-nav-admin a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: translateX(4px);
+}
+
+.mobile-nav .mobile-nav-admin .menu-num {
+  color: var(--status-amber);
+  background: rgba(255, 167, 38, 0.1);
+  border-color: rgba(255, 167, 38, 0.25);
+}
+
 /* ==========================================================================
    BUTTONS
    ========================================================================== */
@@ -528,7 +571,7 @@ body.cursor-ready .cursor-ring {
   align-items: center;
 }
 
-.hero-grid > * {
+.hero-grid>* {
   min-width: 0;
 }
 
@@ -645,7 +688,7 @@ body.cursor-ready .cursor-ring {
 .visual-sep {
   width: 1px;
   height: 16px;
-  background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.25), transparent);
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.25), transparent);
 }
 
 .visual-tab .status-dot {
@@ -728,13 +771,44 @@ body.cursor-ready .cursor-ring {
 }
 
 /* Syntax Highlighting Colors */
-.syn-kw { color: #f43f5e; font-weight: 600; }        /* Keywords: def, return, const, import, class */
-.syn-fn { color: #3b82f6; font-weight: 600; }        /* Function names: burnout_score, fetch, train */
-.syn-str { color: #10b981; }                         /* Strings: "burnout", 'MOODIX' */
-.syn-num { color: #f59e0b; }                         /* Numbers: 7, 100, 0.18 */
-.syn-comment { color: #6b7280; font-style: italic; } /* Comments: # ... */
-.syn-type { color: #8b5cf6; }                        /* Types & builtins: sessions, self, list */
-.syn-op { color: #ec4899; }                          /* Operators: =, -, /, * */
+.syn-kw {
+  color: #f43f5e;
+  font-weight: 600;
+}
+
+/* Keywords: def, return, const, import, class */
+.syn-fn {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* Function names: burnout_score, fetch, train */
+.syn-str {
+  color: #10b981;
+}
+
+/* Strings: "burnout", 'MOODIX' */
+.syn-num {
+  color: #f59e0b;
+}
+
+/* Numbers: 7, 100, 0.18 */
+.syn-comment {
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Comments: # ... */
+.syn-type {
+  color: #8b5cf6;
+}
+
+/* Types & builtins: sessions, self, list */
+.syn-op {
+  color: #ec4899;
+}
+
+/* Operators: =, -, /, * */
 
 /* Blinking Caret / Cursor */
 .typing-cursor {
@@ -748,8 +822,15 @@ body.cursor-ready .cursor-ring {
 }
 
 @keyframes blink-caret {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
 }
 
 .visual-caption {
@@ -781,10 +862,24 @@ body.cursor-ready .cursor-ring {
 }
 
 @keyframes scrollcue {
-  0% { transform: scaleY(0); transform-origin: top; }
-  50% { transform: scaleY(1); transform-origin: top; }
-  50.01% { transform-origin: bottom; }
-  100% { transform: scaleY(0); transform-origin: bottom; }
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+
+  50% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+
+  50.01% {
+    transform-origin: bottom;
+  }
+
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
 }
 
 /* ==========================================================================
@@ -1557,11 +1652,25 @@ body.cursor-ready .cursor-ring {
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
 }
 
-.heatmap-day-cell[data-level="0"] { background: #161b22; }
-.heatmap-day-cell[data-level="1"] { background: #0e4429; }
-.heatmap-day-cell[data-level="2"] { background: #006d32; }
-.heatmap-day-cell[data-level="3"] { background: #26a641; }
-.heatmap-day-cell[data-level="4"] { background: #39d353; }
+.heatmap-day-cell[data-level="0"] {
+  background: #161b22;
+}
+
+.heatmap-day-cell[data-level="1"] {
+  background: #0e4429;
+}
+
+.heatmap-day-cell[data-level="2"] {
+  background: #006d32;
+}
+
+.heatmap-day-cell[data-level="3"] {
+  background: #26a641;
+}
+
+.heatmap-day-cell[data-level="4"] {
+  background: #39d353;
+}
 
 /* Heatmap Footer & Legend matching reference UI */
 .heatmap-footer {
@@ -1603,8 +1712,15 @@ body.cursor-ready .cursor-ring {
 }
 
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
 }
 
 .stat-unavailable {
@@ -1635,11 +1751,25 @@ body.cursor-ready .cursor-ring {
   border-radius: 2px;
 }
 
-.legend-cell.level-0 { background: #161b22; }
-.legend-cell.level-1 { background: #0e4429; }
-.legend-cell.level-2 { background: #006d32; }
-.legend-cell.level-3 { background: #26a641; }
-.legend-cell.level-4 { background: #39d353; }
+.legend-cell.level-0 {
+  background: #161b22;
+}
+
+.legend-cell.level-1 {
+  background: #0e4429;
+}
+
+.legend-cell.level-2 {
+  background: #006d32;
+}
+
+.legend-cell.level-3 {
+  background: #26a641;
+}
+
+.legend-cell.level-4 {
+  background: #39d353;
+}
 
 /* Card Body & Metrics */
 .presence-card-body {
@@ -2054,8 +2184,15 @@ body.cursor-ready .cursor-ring {
 }
 
 @keyframes fadeInStatus {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Interactive Map Card */
@@ -2157,7 +2294,7 @@ body.cursor-ready .cursor-ring {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   transition: background 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease);
   z-index: 2;
 }
@@ -2470,11 +2607,27 @@ body.cursor-ready .cursor-ring {
 }
 
 @keyframes heart-pulse {
-  0%, 100% { transform: scale(1); }
-  14% { transform: scale(1.28); }
-  28% { transform: scale(1); }
-  42% { transform: scale(1.28); }
-  70% { transform: scale(1); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  14% {
+    transform: scale(1.28);
+  }
+
+  28% {
+    transform: scale(1);
+  }
+
+  42% {
+    transform: scale(1.28);
+  }
+
+  70% {
+    transform: scale(1);
+  }
 }
 
 .footer-author-link {
@@ -2504,10 +2657,21 @@ body.cursor-ready .cursor-ring {
   transform: translateY(0);
 }
 
-[data-reveal-root] [data-reveal]:nth-child(1) { transition-delay: 0s; }
-[data-reveal-root] [data-reveal]:nth-child(2) { transition-delay: 0.06s; }
-[data-reveal-root] [data-reveal]:nth-child(3) { transition-delay: 0.12s; }
-[data-reveal-root] [data-reveal]:nth-child(4) { transition-delay: 0.18s; }
+[data-reveal-root] [data-reveal]:nth-child(1) {
+  transition-delay: 0s;
+}
+
+[data-reveal-root] [data-reveal]:nth-child(2) {
+  transition-delay: 0.06s;
+}
+
+[data-reveal-root] [data-reveal]:nth-child(3) {
+  transition-delay: 0.12s;
+}
+
+[data-reveal-root] [data-reveal]:nth-child(4) {
+  transition-delay: 0.18s;
+}
 
 /* ==========================================================================
    RESPONSIVE LAYOUTS
@@ -2517,16 +2681,19 @@ body.cursor-ready .cursor-ring {
     grid-template-columns: 1fr 400px;
     gap: var(--space-lg);
   }
+
   .about-grid {
     grid-template-columns: 320px 1fr;
     gap: var(--space-lg);
   }
+
   .skills-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 900px) {
+
   .primary-nav,
   .header-cta,
   .command-separator {
@@ -2878,12 +3045,12 @@ body.cursor-ready .cursor-ring {
     align-items: flex-start;
     gap: 14px;
   }
-  
+
   .presence-github-card .presence-card-header .presence-link-btn {
     width: 100%;
     justify-content: center;
   }
-  
+
   .presence-metrics-row {
     padding: 12px 14px;
     gap: 12px;
@@ -2929,14 +3096,21 @@ body.intro-active {
 }
 
 @keyframes introGlowBreathe {
-  0% { transform: scale(0.9) translate3d(0, 0, 0); opacity: 0.7; }
-  100% { transform: scale(1.15) translate3d(0, 0, 0); opacity: 1; }
+  0% {
+    transform: scale(0.9) translate3d(0, 0, 0);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(1.15) translate3d(0, 0, 0);
+    opacity: 1;
+  }
 }
 
 .intro-grid-bg {
   position: absolute;
   inset: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 36px 36px;
@@ -2960,19 +3134,52 @@ body.intro-active {
   backdrop-filter: blur(4px);
 }
 
-.f-code-1 { top: 18%; left: 12%; animation: floatDrift1 4s infinite alternate ease-in-out; }
-.f-code-2 { top: 22%; right: 14%; animation: floatDrift2 5s infinite alternate ease-in-out; }
-.f-code-3 { bottom: 20%; left: 15%; animation: floatDrift2 4.5s infinite alternate ease-in-out; }
-.f-code-4 { bottom: 24%; right: 12%; animation: floatDrift1 5.5s infinite alternate ease-in-out; }
+.f-code-1 {
+  top: 18%;
+  left: 12%;
+  animation: floatDrift1 4s infinite alternate ease-in-out;
+}
+
+.f-code-2 {
+  top: 22%;
+  right: 14%;
+  animation: floatDrift2 5s infinite alternate ease-in-out;
+}
+
+.f-code-3 {
+  bottom: 20%;
+  left: 15%;
+  animation: floatDrift2 4.5s infinite alternate ease-in-out;
+}
+
+.f-code-4 {
+  bottom: 24%;
+  right: 12%;
+  animation: floatDrift1 5.5s infinite alternate ease-in-out;
+}
 
 @keyframes floatDrift1 {
-  0% { transform: translateY(0) rotate(0deg); opacity: 0.2; }
-  100% { transform: translateY(-14px) rotate(2deg); opacity: 0.45; }
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.2;
+  }
+
+  100% {
+    transform: translateY(-14px) rotate(2deg);
+    opacity: 0.45;
+  }
 }
 
 @keyframes floatDrift2 {
-  0% { transform: translateY(0) rotate(0deg); opacity: 0.2; }
-  100% { transform: translateY(14px) rotate(-2deg); opacity: 0.45; }
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.2;
+  }
+
+  100% {
+    transform: translateY(14px) rotate(-2deg);
+    opacity: 0.45;
+  }
 }
 
 .intro-screen.is-hidden {
@@ -3017,8 +3224,18 @@ body.intro-active {
 }
 
 @keyframes introBeacon {
-  0%, 100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.35); opacity: 1; box-shadow: 0 0 18px rgba(16, 185, 129, 1); }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+    box-shadow: 0 0 18px rgba(16, 185, 129, 1);
+  }
 }
 
 .intro-sys-tag {
@@ -3101,8 +3318,13 @@ body.intro-active {
 }
 
 @keyframes introCursorBlink {
-  0% { opacity: 0.2; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0.2;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 .intro-progress-bar {
