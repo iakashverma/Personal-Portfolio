@@ -1,5 +1,5 @@
 /**
- * PORTFOLIO DATA LAYER — Single Source of Truth
+ * PORTFOLIO DATA LAYER — Central Single Source of Truth
  * Connects directly to the production backend API (/api/data).
  * Ensures all admin changes are persisted to the production database and
  * immediately reflected across all devices, browsers, and sessions.
@@ -185,12 +185,13 @@ const PortfolioData = (() => {
     }
   };
 
-  // In-Memory state for instant synchronous rendering
+  // In-Memory state for instant rendering
   let memoryData = JSON.parse(JSON.stringify(defaults));
   let isInitialized = false;
   let initPromise = null;
+  let isDatabaseConnected = true;
 
-  // Local storage fallback helper
+  // Local storage helper
   const loadLocalStorage = () => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -205,14 +206,14 @@ const PortfolioData = (() => {
     } catch (e) {}
   };
 
-  // Pre-load local storage if present before fetch completes
+  // Pre-load local storage only as transient initial render before backend fetch completes
   const localVal = loadLocalStorage();
   if (localVal) {
     memoryData = { ...memoryData, ...localVal };
   }
 
   // ============================================================
-  // BACKEND SYNC LAYER
+  // BACKEND SYNC LAYER (CENTRAL DATABASE PERSISTENCE)
   // ============================================================
 
   const fetchFromBackend = async () => {
@@ -226,17 +227,18 @@ const PortfolioData = (() => {
         const json = await res.json();
         if (json && json.success && json.data) {
           memoryData = json.data;
+          isDatabaseConnected = json.isDatabaseConnected !== false;
           saveLocalStorage(memoryData);
           isInitialized = true;
           window.dispatchEvent(new CustomEvent('portfolioDataLoaded', { detail: memoryData }));
-          return memoryData;
+          return { success: true, data: memoryData, isDatabaseConnected };
         }
       }
     } catch (e) {
-      console.warn('PortfolioData: Could not fetch from backend API, using cached data.', e);
+      console.warn('PortfolioData: Could not fetch from central backend API.', e);
     }
     isInitialized = true;
-    return memoryData;
+    return { success: false, data: memoryData, isDatabaseConnected: false };
   };
 
   const init = () => {
@@ -246,7 +248,7 @@ const PortfolioData = (() => {
     return initPromise;
   };
 
-  // Auto-trigger init on script execution
+  // Auto-trigger init on script load
   init();
 
   const syncToBackend = async (payload) => {
@@ -259,19 +261,31 @@ const PortfolioData = (() => {
         },
         body: JSON.stringify(payload)
       });
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.success && json.data) {
-          memoryData = json.data;
-          saveLocalStorage(memoryData);
-          window.dispatchEvent(new CustomEvent('portfolioDataUpdated', { detail: memoryData }));
-          return true;
-        }
+      const json = await res.json();
+      if (res.ok && json && json.success && json.data) {
+        memoryData = json.data;
+        isDatabaseConnected = json.isDatabaseConnected !== false;
+        saveLocalStorage(memoryData);
+        window.dispatchEvent(new CustomEvent('portfolioDataUpdated', { detail: memoryData }));
+        return {
+          success: true,
+          data: memoryData,
+          isDatabaseConnected,
+          message: json.message
+        };
+      } else {
+        return {
+          success: false,
+          error: (json && json.error) || 'Failed to update backend database'
+        };
       }
     } catch (e) {
       console.error('PortfolioData: Error syncing to backend:', e);
+      return {
+        success: false,
+        error: e.message || 'Network error while attempting to sync with central database'
+      };
     }
-    return false;
   };
 
   // ============================================================
@@ -288,7 +302,6 @@ const PortfolioData = (() => {
   const set = (section, value) => {
     memoryData[section] = value;
     saveLocalStorage(memoryData);
-    // Fire background sync to backend database
     syncToBackend({ section, value });
     return true;
   };
@@ -296,8 +309,7 @@ const PortfolioData = (() => {
   const setAsync = async (section, value) => {
     memoryData[section] = value;
     saveLocalStorage(memoryData);
-    const success = await syncToBackend({ section, value });
-    return success;
+    return await syncToBackend({ section, value });
   };
 
   const getAll = () => {
@@ -342,6 +354,8 @@ const PortfolioData = (() => {
     return JSON.stringify(memoryData[section]) !== JSON.stringify(defaults[section]);
   };
 
+  const getDbConnectedStatus = () => isDatabaseConnected;
+
   return {
     init,
     fetchFromBackend,
@@ -354,6 +368,7 @@ const PortfolioData = (() => {
     resetAll,
     resetAllAsync,
     getDefault,
-    isEdited
+    isEdited,
+    getDbConnectedStatus
   };
 })();

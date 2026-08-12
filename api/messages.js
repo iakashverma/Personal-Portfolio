@@ -11,18 +11,18 @@ const getMessagesFilePath = () => {
   return path.join(dataDir, 'messages.json');
 };
 
-const loadFromKV = async () => {
+const loadFromKV = async (key = 'portfolio_contact_messages') => {
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (kvUrl && kvToken) {
     try {
-      const res = await fetch(`${kvUrl}/get/portfolio_contact_messages`, {
+      const res = await fetch(`${kvUrl.replace(/\/$/, '')}/get/${key}`, {
         headers: { Authorization: `Bearer ${kvToken}` }
       });
       if (res.ok) {
         const json = await res.json();
-        if (json && json.result) {
+        if (json && json.result !== undefined && json.result !== null) {
           return typeof json.result === 'string' ? JSON.parse(json.result) : json.result;
         }
       }
@@ -33,21 +33,22 @@ const loadFromKV = async () => {
   return null;
 };
 
-const saveToKV = async (msgs) => {
+const saveToKV = async (key = 'portfolio_contact_messages', msgs) => {
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (kvUrl && kvToken) {
     try {
-      await fetch(`${kvUrl}/set/portfolio_contact_messages`, {
+      const payloadString = typeof msgs === 'string' ? msgs : JSON.stringify(msgs);
+      const res = await fetch(`${kvUrl.replace(/\/$/, '')}/set/${key}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${kvToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(JSON.stringify(msgs))
+        body: JSON.stringify(payloadString)
       });
-      return true;
+      return res.ok;
     } catch (err) {
       console.error('[API Messages] Error saving to KV:', err);
     }
@@ -55,9 +56,67 @@ const saveToKV = async (msgs) => {
   return false;
 };
 
+const loadFromSupabase = async (key = 'portfolio_contact_messages') => {
+  const url = process.env.SUPABASE_URL;
+  const keyToken = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+  if (url && keyToken) {
+    try {
+      const res = await fetch(`${url.replace(/\/$/, '')}/rest/v1/portfolio_kv?key=eq.${key}&select=value`, {
+        headers: {
+          'apikey': keyToken,
+          'Authorization': `Bearer ${keyToken}`
+        }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (Array.isArray(rows) && rows.length > 0) {
+          const val = rows[0].value;
+          return typeof val === 'string' ? JSON.parse(val) : val;
+        }
+      }
+    } catch (err) {
+      console.error('[API Messages] Supabase load error:', err);
+    }
+  }
+  return null;
+};
+
+const saveToSupabase = async (key = 'portfolio_contact_messages', msgs) => {
+  const url = process.env.SUPABASE_URL;
+  const keyToken = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+  if (url && keyToken) {
+    try {
+      const payloadString = typeof msgs === 'string' ? msgs : JSON.stringify(msgs);
+      const res = await fetch(`${url.replace(/\/$/, '')}/rest/v1/portfolio_kv`, {
+        method: 'POST',
+        headers: {
+          'apikey': keyToken,
+          'Authorization': `Bearer ${keyToken}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          key: key,
+          value: payloadString,
+          updated_at: new Date().toISOString()
+        })
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('[API Messages] Supabase save error:', err);
+    }
+  }
+  return false;
+};
+
 const readMessages = async () => {
-  const kvMsgs = await loadFromKV();
+  const kvMsgs = await loadFromKV('portfolio_contact_messages');
   if (Array.isArray(kvMsgs)) return kvMsgs;
+
+  const supaMsgs = await loadFromSupabase('portfolio_contact_messages');
+  if (Array.isArray(supaMsgs)) return supaMsgs;
 
   if (memoryMessages && memoryMessages.length > 0) return memoryMessages;
 
@@ -76,7 +135,8 @@ const readMessages = async () => {
 
 const writeMessages = async (msgs) => {
   memoryMessages = msgs;
-  await saveToKV(msgs);
+  await saveToKV('portfolio_contact_messages', msgs);
+  await saveToSupabase('portfolio_contact_messages', msgs);
   try {
     const filePath = getMessagesFilePath();
     fs.writeFileSync(filePath, JSON.stringify(msgs, null, 2), 'utf8');
@@ -84,12 +144,12 @@ const writeMessages = async (msgs) => {
 };
 
 module.exports = async (req, res) => {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();

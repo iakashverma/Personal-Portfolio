@@ -136,6 +136,30 @@
     return PortfolioData.isEdited(section) ? `<span class="edited-badge"><i class="fas fa-pen"></i> Edited</span>` : '';
   };
 
+  const handleSaveResult = (res, defaultMsg = 'Saved & synchronized globally!') => {
+    if (res && res.success) {
+      if (res.isDatabaseConnected === false) {
+        showToast(res.message || 'Saved locally (Warning: Database not connected in Vercel)', 'warning');
+      } else {
+        showToast(defaultMsg, 'success');
+      }
+    } else {
+      showToast('Error saving changes: ' + ((res && res.error) || 'Unknown error'), 'danger');
+    }
+  };
+
+  const handleResetResult = (res, defaultMsg = 'Reset section to default!') => {
+    if (res && res.success) {
+      if (res.isDatabaseConnected === false) {
+        showToast('Reset locally (Warning: Database not connected in Vercel)', 'warning');
+      } else {
+        showToast(defaultMsg, 'success');
+      }
+    } else {
+      showToast('Error resetting section: ' + ((res && res.error) || 'Unknown error'), 'danger');
+    }
+  };
+
   // --- Contact Message Utilities ---
   let cachedMessages = [];
 
@@ -316,10 +340,10 @@
     });
 
     document.getElementById('reset-all-btn')?.addEventListener('click', () => {
-      showConfirm('Reset All Content?', 'This will revert all sections to their original default content. Any admin edits will be permanently lost.', () => {
-        PortfolioData.resetAll();
+      showConfirm('Reset All Content?', 'This will revert all sections to their original default content. Any admin edits will be permanently lost.', async () => {
+        const res = await PortfolioData.resetAllAsync();
+        handleResetResult(res, 'All content reset to defaults.');
         renderDashboard();
-        showToast('All content reset to defaults.');
       });
     });
   };

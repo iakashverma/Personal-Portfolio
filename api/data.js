@@ -1,9 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
-const http = require('http');
 
-// Default portfolio data object
+// Default portfolio data object — Single Source Fallback
 const defaults = {
   hero: {
     badge: 'Open to work · Full-time & freelance',
@@ -152,10 +150,10 @@ const defaults = {
   }
 };
 
-// In-memory serverless cache
+// In-memory cache per serverless invocation
 let memoryData = null;
 
-// Storage helper functions
+// Local File System Helper (for local npm run dev testing)
 const getDataFilePath = () => {
   const dataDir = path.join(process.cwd(), '.data');
   if (!fs.existsSync(dataDir)) {
@@ -164,114 +162,201 @@ const getDataFilePath = () => {
   return path.join(dataDir, 'portfolio_data.json');
 };
 
-const loadFromKV = async () => {
+// 1. Upstash Redis / Vercel KV REST API Adapter
+const loadFromKV = async (key = 'portfolio_cms_data') => {
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (kvUrl && kvToken) {
     try {
-      const res = await fetch(`${kvUrl}/get/portfolio_cms_data`, {
+      const res = await fetch(`${kvUrl.replace(/\/$/, '')}/get/${key}`, {
         headers: { Authorization: `Bearer ${kvToken}` }
       });
       if (res.ok) {
         const json = await res.json();
-        if (json && json.result) {
-          const parsed = typeof json.result === 'string' ? JSON.parse(json.result) : json.result;
-          return parsed;
+        if (json && json.result !== undefined && json.result !== null) {
+          return typeof json.result === 'string' ? JSON.parse(json.result) : json.result;
         }
       }
     } catch (err) {
-      console.error('[API Data] Error reading from KV/Upstash:', err);
+      console.error('[API Data] Upstash/KV load error:', err);
     }
   }
   return null;
 };
 
-const saveToKV = async (data) => {
+const saveToKV = async (key = 'portfolio_cms_data', data) => {
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (kvUrl && kvToken) {
     try {
-      await fetch(`${kvUrl}/set/portfolio_cms_data`, {
+      const payloadString = typeof data === 'string' ? data : JSON.stringify(data);
+      const res = await fetch(`${kvUrl.replace(/\/$/, '')}/set/${key}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${kvToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(JSON.stringify(data))
+        body: JSON.stringify(payloadString)
       });
-      return true;
+      return res.ok;
     } catch (err) {
-      console.error('[API Data] Error saving to KV/Upstash:', err);
+      console.error('[API Data] Upstash/KV save error:', err);
     }
   }
   return false;
 };
 
+// 2. Supabase REST API Adapter
+const loadFromSupabase = async (key = 'portfolio_cms_data') => {
+  const url = process.env.SUPABASE_URL;
+  const keyToken = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+  if (url && keyToken) {
+    try {
+      const res = await fetch(`${url.replace(/\/$/, '')}/rest/v1/portfolio_kv?key=eq.${key}&select=value`, {
+        headers: {
+          'apikey': keyToken,
+          'Authorization': `Bearer ${keyToken}`
+        }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (Array.isArray(rows) && rows.length > 0) {
+          const val = rows[0].value;
+          return typeof val === 'string' ? JSON.parse(val) : val;
+        }
+      }
+    } catch (err) {
+      console.error('[API Data] Supabase load error:', err);
+    }
+  }
+  return null;
+};
+
+const saveToSupabase = async (key = 'portfolio_cms_data', data) => {
+  const url = process.env.SUPABASE_URL;
+  const keyToken = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+  if (url && keyToken) {
+    try {
+      const payloadString = typeof data === 'string' ? data : JSON.stringify(data);
+      const res = await fetch(`${url.replace(/\/$/, '')}/rest/v1/portfolio_kv`, {
+        method: 'POST',
+        headers: {
+          'apikey': keyToken,
+          'Authorization': `Bearer ${keyToken}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          key: key,
+          value: payloadString,
+          updated_at: new Date().toISOString()
+        })
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('[API Data] Supabase save error:', err);
+    }
+  }
+  return false;
+};
+
+// Primary Storage Reader
 const readStorage = async () => {
-  // 1. Try Vercel KV / Upstash Redis
-  const kvData = await loadFromKV();
-  if (kvData) return kvData;
+  // 1. Try Upstash Redis / Vercel KV
+  const kvData = await loadFromKV('portfolio_cms_data');
+  if (kvData) return { data: kvData, provider: 'Upstash/KV' };
 
-  // 2. Try In-Memory cache if present
-  if (memoryData) return memoryData;
+  // 2. Try Supabase
+  const supaData = await loadFromSupabase('portfolio_cms_data');
+  if (supaData) return { data: supaData, provider: 'Supabase' };
 
-  // 3. Try Local File System
+  // 3. Try In-memory cache
+  if (memoryData) return { data: memoryData, provider: 'Memory' };
+
+  // 4. Try Local File System
   const filePath = getDataFilePath();
   if (fs.existsSync(filePath)) {
     try {
-      const fileContent = fs.readFileSync(filePath, 'utf8');
-      if (fileContent.trim()) {
-        memoryData = JSON.parse(fileContent);
-        return memoryData;
+      const content = fs.readFileSync(filePath, 'utf8');
+      if (content.trim()) {
+        memoryData = JSON.parse(content);
+        return { data: memoryData, provider: 'LocalDisk' };
       }
-    } catch (e) {
-      console.error('[API Data] Error reading disk file:', e);
-    }
+    } catch (e) {}
   }
 
-  // 4. Return Defaults
+  // 5. Fallback to hardcoded defaults
   memoryData = JSON.parse(JSON.stringify(defaults));
-  return memoryData;
+  return { data: memoryData, provider: 'Defaults' };
 };
 
+// Primary Storage Writer
 const writeStorage = async (data) => {
   memoryData = data;
+  let savedToDatabase = false;
 
-  // 1. Try KV / Upstash
-  await saveToKV(data);
+  // 1. Upstash / KV
+  if (await saveToKV('portfolio_cms_data', data)) {
+    savedToDatabase = true;
+  }
 
-  // 2. Try Local File System (always persist to disk when filesystem available)
+  // 2. Supabase
+  if (await saveToSupabase('portfolio_cms_data', data)) {
+    savedToDatabase = true;
+  }
+
+  // 3. Local disk (works during local npm run dev testing)
   try {
     const filePath = getDataFilePath();
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-  } catch (e) {
-    // Read-only filesystem in Vercel serverless environment is handled gracefully
-  }
+    if (!savedToDatabase && process.env.VERCEL !== '1') {
+      savedToDatabase = true; // Local development disk write
+    }
+  } catch (e) {}
+
+  return savedToDatabase;
+};
+
+// Check if persistent database service is configured in Vercel env
+const isDatabaseConfigured = () => {
+  const hasKV = !!(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL);
+  const hasSupa = !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY));
+  return hasKV || hasSupa || process.env.VERCEL !== '1';
 };
 
 module.exports = async (req, res) => {
-  // Anti-caching HTTP Response Headers
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  // Prevent any browser or CDN caching on API response
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   try {
+    const dbConnected = isDatabaseConfigured();
+
     if (req.method === 'GET') {
-      const currentData = await readStorage();
+      const { data: currentData, provider } = await readStorage();
       const merged = {};
       for (const key of Object.keys(defaults)) {
         merged[key] = currentData[key] !== undefined ? currentData[key] : defaults[key];
       }
-      return res.status(200).json({ success: true, data: merged, updatedAt: Date.now() });
+      return res.status(200).json({
+        success: true,
+        data: merged,
+        provider,
+        isDatabaseConnected: dbConnected,
+        updatedAt: Date.now()
+      });
     }
 
     if (req.method === 'POST' || req.method === 'PUT') {
@@ -280,38 +365,64 @@ module.exports = async (req, res) => {
         try { body = JSON.parse(body); } catch (e) {}
       }
 
-      const currentData = await readStorage();
+      const { data: currentData } = await readStorage();
 
       if (body && body.action === 'reset_all') {
-        await writeStorage(JSON.parse(JSON.stringify(defaults)));
-        return res.status(200).json({ success: true, data: defaults, message: 'Reset all sections to defaults' });
+        const resetData = JSON.parse(JSON.stringify(defaults));
+        const saved = await writeStorage(resetData);
+        return res.status(200).json({
+          success: true,
+          data: resetData,
+          isDatabaseConnected: saved,
+          message: saved ? 'Reset all sections in database.' : 'Reset locally (Warning: Database not configured in Vercel).'
+        });
       }
 
       if (body && body.action === 'reset' && body.section) {
         currentData[body.section] = JSON.parse(JSON.stringify(defaults[body.section] || null));
-        await writeStorage(currentData);
-        return res.status(200).json({ success: true, data: currentData, message: `Reset section ${body.section}` });
+        const saved = await writeStorage(currentData);
+        return res.status(200).json({
+          success: true,
+          data: currentData,
+          isDatabaseConnected: saved,
+          message: saved ? `Reset section ${body.section} in database.` : `Reset ${body.section} locally (Warning: Database not configured in Vercel).`
+        });
       }
 
       if (body && body.section && body.value !== undefined) {
         currentData[body.section] = body.value;
-        await writeStorage(currentData);
-        return res.status(200).json({ success: true, data: currentData, message: `Updated section ${body.section}` });
+        const saved = await writeStorage(currentData);
+        return res.status(200).json({
+          success: true,
+          data: currentData,
+          isDatabaseConnected: saved,
+          message: saved ? `Updated section ${body.section} in database.` : `Updated ${body.section} locally (Warning: Database not configured in Vercel).`
+        });
       }
 
       if (body && typeof body === 'object' && !body.action && !body.section) {
-        // Full payload save
         const updated = { ...currentData, ...body };
-        await writeStorage(updated);
-        return res.status(200).json({ success: true, data: updated, message: 'Updated full portfolio data' });
+        const saved = await writeStorage(updated);
+        return res.status(200).json({
+          success: true,
+          data: updated,
+          isDatabaseConnected: saved,
+          message: saved ? 'Updated full portfolio data in database.' : 'Updated full data locally (Warning: Database not configured in Vercel).'
+        });
       }
 
       return res.status(400).json({ success: false, error: 'Invalid payload structure' });
     }
 
     if (req.method === 'DELETE') {
-      await writeStorage(JSON.parse(JSON.stringify(defaults)));
-      return res.status(200).json({ success: true, data: defaults, message: 'All portfolio data reset to defaults' });
+      const resetData = JSON.parse(JSON.stringify(defaults));
+      const saved = await writeStorage(resetData);
+      return res.status(200).json({
+        success: true,
+        data: resetData,
+        isDatabaseConnected: saved,
+        message: 'All portfolio data reset to defaults'
+      });
     }
 
     return res.status(405).json({ success: false, error: 'Method not allowed' });
