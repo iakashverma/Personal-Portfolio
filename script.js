@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const galleryGrid = document.getElementById('gallery-grid');
     if (!galleryGrid) return;
     const enabledItems = (Array.isArray(items) ? items : []).filter(item => item && item.enabled !== false);
-    
+
     galleryGrid.innerHTML = enabledItems.map(item => `
       <div class="gallery-opencluely-card" data-id="${escHTML(item.id)}" tabindex="0" role="button" aria-label="View photo: ${escHTML(item.title)}">
         <div class="gallery-card-image-wrapper">
@@ -415,32 +415,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <h3 class="feature-card-title">${escHTML(c.title)}</h3>
                 <p class="feature-card-desc">${escHTML(c.description)}</p>
-                <button type="button" class="btn-view-cert" data-cert-index="${index}">
+                <a href="${escHTML(c.url || '#')}" target="_blank" rel="noopener noreferrer" class="btn-view-cert">
                   <span>View Certificate</span>
                   <span class="cert-arrow">→</span>
-                </button>
+                </a>
               </article>
             `).join('');
-
-            certsGrid.querySelectorAll('.btn-view-cert').forEach(btn => {
-              btn.addEventListener('click', () => {
-                const idx = parseInt(btn.getAttribute('data-cert-index'), 10);
-                const c = enabledCerts[idx];
-                
-                // Fallback for legacy links without an image representation
-                if (!c.imageUrl && (!c.sourceType || c.sourceType === 'url')) {
-                  window.open(c.url || '#', '_blank');
-                  return;
-                }
-                
-                openLightbox({
-                  image: c.imageUrl || c.url,
-                  title: c.title,
-                  caption: c.description,
-                  badge: 'CERTIFICATE'
-                });
-              });
-            });
 
             const oldCertToggle = certsContainer.querySelector('.section-toggle-wrapper[data-for="certifications"]');
             if (oldCertToggle) oldCertToggle.remove();
@@ -519,7 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const getPlatformIcon = (platformName, url, customIcon) => {
         const name = (platformName || '').toLowerCase();
         const link = (url || '').toLowerCase();
-        
+
         if (name.includes('whatsapp') || link.includes('wa.me') || link.includes('whatsapp.com')) return 'fab fa-whatsapp';
         if (name.includes('telegram') || link.includes('t.me') || link.includes('telegram.org')) return 'fab fa-telegram-plane';
         if (name.includes('email') || name.includes('mail') || link.startsWith('mailto:')) return 'fas fa-envelope';
@@ -532,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (name.includes('facebook') || link.includes('facebook.com')) return 'fab fa-facebook-f';
         if (name.includes('twitter') || name.includes('x.com') || link.includes('twitter.com') || link.includes('x.com')) return 'fab fa-x-twitter';
         if (name.includes('youtube') || link.includes('youtube.com')) return 'fab fa-youtube';
-        
+
         if (customIcon && customIcon !== 'fas fa-link') return customIcon;
         return 'fas fa-link';
       };
@@ -578,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.footer) {
         const footerDesc = document.querySelector('.footer-description');
         if (footerDesc && data.footer.description) footerDesc.textContent = data.footer.description;
-        
+
         const footerCopySpan = document.querySelector('.footer-copyright span:not(.license-tag)');
         if (footerCopySpan && data.footer.copyright) footerCopySpan.textContent = data.footer.copyright;
 
@@ -944,7 +924,7 @@ document.addEventListener('DOMContentLoaded', () => {
               const match = currentMsgs.find(m => m.id === newMessage.id);
               if (match) match.emailDelivered = true;
               localStorage.setItem('portfolio_contact_messages', JSON.stringify(currentMsgs));
-            } catch (e) {}
+            } catch (e) { }
           }
         } catch (e) {
           // Graceful fallback - message is safely recorded in Admin Panel
@@ -1206,7 +1186,7 @@ document.addEventListener('DOMContentLoaded', () => {
       for (let d = 0; d < 7; d++) {
         const dayCell = document.createElement('div');
         dayCell.className = 'heatmap-day-cell';
-        
+
         let level = 0;
         if (activeSpikes[w]) {
           const match = activeSpikes[w].find(item => item.d === d);

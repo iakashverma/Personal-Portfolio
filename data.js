@@ -128,9 +128,9 @@ const PortfolioData = (() => {
       title: 'Certifications earned',
       subtitle: 'Verified credentials from industry leaders and top universities.',
       items: [
-        { id: 'ml', icon: 'fas fa-robot', title: 'Machine Learning Specialization', description: 'Comprehensive ML program covering supervised, unsupervised, and deep learning — by DeepLearning.AI & Stanford Online.', sourceType: 'url', url: '#', imageUrl: '', enabled: true },
-        { id: 'python', icon: 'fab fa-python', title: 'Python for Data Science', description: 'Data analysis, visualization, and scientific computing with Python — certified by IBM.', sourceType: 'url', url: '#', imageUrl: '', enabled: true },
-        { id: 'fullstack', icon: 'fas fa-layer-group', title: 'Full-Stack Web Development', description: 'End-to-end web engineering covering frontend, backend, databases, and deployment — certified by Meta.', sourceType: 'url', url: '#', imageUrl: '', enabled: true }
+        { id: 'ml', icon: 'fas fa-robot', title: 'Machine Learning Specialization', description: 'Comprehensive ML program covering supervised, unsupervised, and deep learning — by DeepLearning.AI & Stanford Online.', url: '#', enabled: true },
+        { id: 'python', icon: 'fab fa-python', title: 'Python for Data Science', description: 'Data analysis, visualization, and scientific computing with Python — certified by IBM.', url: '#', enabled: true },
+        { id: 'fullstack', icon: 'fas fa-layer-group', title: 'Full-Stack Web Development', description: 'End-to-end web engineering covering frontend, backend, databases, and deployment — certified by Meta.', url: '#', enabled: true }
       ]
     },
 
@@ -199,14 +199,14 @@ const PortfolioData = (() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) return JSON.parse(stored);
-    } catch (e) {}
+    } catch (e) { }
     return null;
   };
 
   const saveLocalStorage = (data) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {}
+    } catch (e) { }
   };
 
   // Pre-load local storage only as transient initial render before backend fetch completes
@@ -307,9 +307,9 @@ const PortfolioData = (() => {
   const syncToBackend = async (payload) => {
     try {
       const headers = {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        };
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
       // Attach admin secret for authenticated write operations
       if (adminSecret) {
         headers['x-admin-secret'] = adminSecret;
