@@ -64,6 +64,69 @@
   });
 
   // ============================================================
+  // CERTIFICATE IMAGE PROCESSING UTILS
+  // ============================================================
+  const loadPDFJS = async () => {
+    if (window.pdfjsLib) return window.pdfjsLib;
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.onload = () => {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        resolve(window.pdfjsLib);
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  };
+
+  const processPDFToWebP = async (file) => {
+    const pdfjs = await loadPDFJS();
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 1.5 });
+    let scale = 1;
+    if (viewport.width > 800) scale = 800 / viewport.width;
+    const scaledViewport = page.getViewport({ scale: 1.5 * scale });
+    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = scaledViewport.width;
+    canvas.height = scaledViewport.height;
+    
+    await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+    return canvas.toDataURL('image/webp', 0.6);
+  };
+
+  const processImageToWebP = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          if (width > 800) {
+            height = Math.round((height * 800) / width);
+            width = 800;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/webp', 0.6));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // ============================================================
   // EDIT MODAL
   // ============================================================
   const showEditModal = (title, fieldsHTML, onSave) => {
@@ -1102,9 +1165,149 @@
       });
     });
 
-    // Edit modal helper
     const openEditModal = (cfg, items, idx) => {
       const item = items[idx];
+
+      if (sectionKey === 'certifications') {
+        const sourceType = item.sourceType || 'url';
+        const fieldsHTML = `
+          <div class="field-group">
+            <label class="field-label">Title</label>
+            <input type="text" class="field-input" id="modal-title" value="${esc(item.title || '')}">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Icon Class</label>
+            <input type="text" class="field-input" id="modal-icon" value="${esc(item.icon || 'fas fa-certificate')}">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Description</label>
+            <textarea class="field-textarea" id="modal-description" rows="3">${esc(item.description || '')}</textarea>
+          </div>
+          
+          <div class="field-group" style="margin-top:20px;">
+            <label class="field-label">Certificate Source Format</label>
+            <div style="display:flex; gap: 16px; margin-top: 8px;">
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="radio" name="sourceType" value="url" ${sourceType === 'url' ? 'checked' : ''}> URL Link
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="radio" name="sourceType" value="pdf" ${sourceType === 'pdf' ? 'checked' : ''}> PDF File
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="radio" name="sourceType" value="image" ${sourceType === 'image' ? 'checked' : ''}> Image File
+              </label>
+            </div>
+          </div>
+
+          <div id="source-url-container" class="field-group" style="display: ${sourceType === 'url' ? 'block' : 'none'};">
+            <label class="field-label">Certificate Link / URL</label>
+            <input type="text" class="field-input" id="modal-url" value="${esc(item.url || '')}" placeholder="https://...">
+            <button type="button" class="btn-admin" id="btn-generate-url-preview" style="margin-top:8px; padding: 6px 12px; font-size: 13px;">Generate URL Preview</button>
+          </div>
+
+          <div id="source-file-container" class="field-group" style="display: ${sourceType === 'pdf' || sourceType === 'image' ? 'block' : 'none'};">
+            <label class="field-label" id="source-file-label">${sourceType === 'pdf' ? 'Upload PDF' : 'Upload Image'}</label>
+            <input type="file" id="modal-file-upload" accept="${sourceType === 'pdf' ? '.pdf' : 'image/*'}" style="margin-top: 6px;">
+            <div style="font-size:12px; color:#aaa; margin-top:4px;">File will be converted & compressed to a WebP image automatically.</div>
+          </div>
+
+          <div class="field-group" style="margin-top: 20px;">
+            <label class="field-label">Generated Image Preview</label>
+            <div style="width:100%; min-height: 100px; background:#111; border: 1px dashed #444; border-radius: 6px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+              ${item.imageUrl ? `<img id="modal-image-preview" src="${item.imageUrl}" style="max-width:100%; max-height:200px; object-fit:contain;">` : `<img id="modal-image-preview" style="display:none; max-width:100%; max-height:200px; object-fit:contain;"><span id="modal-preview-text" style="color:#666; font-size: 13px; padding:20px;">No image generated yet</span>`}
+            </div>
+            <input type="hidden" id="modal-imageUrl" value="${esc(item.imageUrl || '')}">
+          </div>
+        `;
+
+        showEditModal(idx === items.length - 1 && !PortfolioData.isEdited(sectionKey) ? 'Add Certificate' : 'Edit Certificate', fieldsHTML, () => {
+          item.title = document.getElementById('modal-title').value.trim();
+          item.icon = document.getElementById('modal-icon').value.trim();
+          item.description = document.getElementById('modal-description').value.trim();
+          item.sourceType = document.querySelector('input[name="sourceType"]:checked').value;
+          item.url = document.getElementById('modal-url').value.trim();
+          item.imageUrl = document.getElementById('modal-imageUrl').value.trim();
+          
+          saveListAndRerender();
+          closeEditModal();
+          showToast('Certificate saved.');
+        });
+
+        // Add dynamic event listeners
+        setTimeout(() => {
+          const radioBtns = document.querySelectorAll('input[name="sourceType"]');
+          const urlContainer = document.getElementById('source-url-container');
+          const fileContainer = document.getElementById('source-file-container');
+          const fileLabel = document.getElementById('source-file-label');
+          const fileInput = document.getElementById('modal-file-upload');
+          const previewImg = document.getElementById('modal-image-preview');
+          const previewText = document.getElementById('modal-preview-text');
+          const hiddenImageUrl = document.getElementById('modal-imageUrl');
+          
+          const updatePreview = (url) => {
+            hiddenImageUrl.value = url;
+            previewImg.src = url;
+            previewImg.style.display = 'block';
+            if (previewText) previewText.style.display = 'none';
+          };
+
+          radioBtns.forEach(rb => {
+            rb.addEventListener('change', (e) => {
+              const type = e.target.value;
+              if (type === 'url') {
+                urlContainer.style.display = 'block';
+                fileContainer.style.display = 'none';
+              } else {
+                urlContainer.style.display = 'none';
+                fileContainer.style.display = 'block';
+                if (type === 'pdf') {
+                  fileLabel.textContent = 'Upload PDF';
+                  fileInput.accept = '.pdf';
+                } else {
+                  fileLabel.textContent = 'Upload Image';
+                  fileInput.accept = 'image/*';
+                }
+              }
+            });
+          });
+
+          const btnGen = document.getElementById('btn-generate-url-preview');
+          if (btnGen) {
+            btnGen.addEventListener('click', () => {
+              const val = document.getElementById('modal-url').value.trim();
+              if (!val || !val.startsWith('http')) return alert('Please enter a valid URL (http/https).');
+              const thumUrl = \`https://image.thum.io/get/width/800/crop/800/\${val}\`;
+              updatePreview(thumUrl);
+            });
+          }
+
+          if (fileInput) {
+            fileInput.addEventListener('change', async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              const type = document.querySelector('input[name="sourceType"]:checked').value;
+              try {
+                showToast('Processing file... please wait', 'info');
+                let webpDataUrl = '';
+                if (type === 'image') {
+                  webpDataUrl = await processImageToWebP(file);
+                } else if (type === 'pdf') {
+                  webpDataUrl = await processPDFToWebP(file);
+                }
+                if (webpDataUrl) {
+                  updatePreview(webpDataUrl);
+                  showToast('File processed successfully!');
+                }
+              } catch (err) {
+                console.error(err);
+                alert('Error processing file: ' + err.message);
+              }
+            });
+          }
+        }, 50);
+        return;
+      }
+
       const fieldsHTML = cfg.fields.map(f => {
         let val = item[f.key];
         if (f.isArray && Array.isArray(val)) val = val.join(', ');

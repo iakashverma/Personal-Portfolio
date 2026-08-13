@@ -415,12 +415,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <h3 class="feature-card-title">${escHTML(c.title)}</h3>
                 <p class="feature-card-desc">${escHTML(c.description)}</p>
-                <a href="${escHTML(c.url || '#')}" target="_blank" rel="noopener noreferrer" class="btn-view-cert">
+                <button type="button" class="btn-view-cert" data-cert-index="${index}">
                   <span>View Certificate</span>
                   <span class="cert-arrow">→</span>
-                </a>
+                </button>
               </article>
             `).join('');
+
+            certsGrid.querySelectorAll('.btn-view-cert').forEach(btn => {
+              btn.addEventListener('click', () => {
+                const idx = parseInt(btn.getAttribute('data-cert-index'), 10);
+                const c = enabledCerts[idx];
+                
+                // Fallback for legacy links without an image representation
+                if (!c.imageUrl && (!c.sourceType || c.sourceType === 'url')) {
+                  window.open(c.url || '#', '_blank');
+                  return;
+                }
+                
+                openLightbox({
+                  image: c.imageUrl || c.url,
+                  title: c.title,
+                  caption: c.description,
+                  badge: 'CERTIFICATE'
+                });
+              });
+            });
 
             const oldCertToggle = certsContainer.querySelector('.section-toggle-wrapper[data-for="certifications"]');
             if (oldCertToggle) oldCertToggle.remove();
