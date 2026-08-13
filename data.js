@@ -23,35 +23,42 @@ const PortfolioData = (() => {
       badge: 'Open to work · Full-time & freelance',
       headline: 'Building intelligent<br>systems people<br>actually use.',
       lead: "I'm Akash Verma — a developer working across AI/ML, data and the web. I ship small, working versions of ideas first, then spend the real effort making them reliable: clean pipelines, tested logic, interfaces that don't get in the way.",
-      ctaPrimary: { text: 'View Projects', url: '#fieldlog', icon: 'fas fa-arrow-down' },
-      ctaSecondary: { text: 'View Source', url: 'https://github.com/iakashverma', icon: 'fab fa-github' }
+      ctaPrimary: { text: 'Hire Me', url: '#connect', icon: 'fas fa-paper-plane' },
+      ctaSecondary: { text: 'View Resume', url: '', icon: 'fas fa-file-pdf' },
+      resumePages: [
+        { src: 'images/profile.png', caption: 'Resume Page 1' }
+      ]
     },
 
     // ---- HERO VISUAL PREVIEW ----
     heroVisual: {
-      greeting: {
-        lang: 'GREETING.JS',
-        question: '"Welcome to my portfolio!"',
-        answer: 'Real-time developer console output & greeting statement.',
-        caption: 'Live Developer Console — Greeting',
-        lines: [
-          'console.<span class="syn-fn">log</span>(<span class="syn-str">"Hello, I\'m Akash Verma 👋"</span>);'
-        ],
-        enabled: true
+      header: {
+        tab1Icon: 'fas fa-camera',
+        tab2Icon: 'fas fa-brain',
+        tab2Text: 'DEVELOPER',
+        tab3Icon: 'fas fa-code',
+        tab3Text: 'ABOUT_ME.TS',
+        statusDot: true,
+        windowLogoIcon: 'fas fa-circle-dot',
+        windowLogoText: 'AKASH'
       },
       aboutMe: {
         lang: 'ABOUT_ME.TS',
         question: '"Who is Akash Verma?"',
         answer: 'Developer working across AI/ML, Data Science, and Web Engineering.',
         caption: 'Developer Profile Configuration',
-        lines: [
-          '<span class="syn-kw">const</span> developer <span class="syn-op">=</span> {',
-          '  name: <span class="syn-str">"Akash Verma"</span>,',
-          '  focus: <span class="syn-str">"AI/ML · Data · Web"</span>,',
-          '  location: <span class="syn-str">"Based in India"</span>,',
-          '  building: <span class="syn-str">"MOODIX"</span>',
-          '};'
-        ],
+        devName: 'Akash Verma',
+        devFocus: 'AI/ML · Data · Web',
+        devLocation: 'Based in India',
+        devBuilding: 'MOODIX',
+        enabled: true
+      },
+      greeting: {
+        lang: 'GREETING.JS',
+        question: '"Welcome to my portfolio!"',
+        answer: 'Real-time developer console output & greeting statement.',
+        caption: 'Live Developer Console — Greeting',
+        greetingText: "Hello, I'm Akash Verma 👋",
         enabled: true
       },
       motivationalQuotes: [
@@ -90,10 +97,58 @@ const PortfolioData = (() => {
       title: "Projects I've built",
       subtitle: "Real things I've shipped — from research tools to full-stack apps.",
       items: [
-        { id: 'detoxa', icon: 'fas fa-flask', title: 'Detoxa', description: 'Digital Wellness & Self-Regulation Research Platform built with Python, Machine Learning, PHP, and MySQL.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', domain: 'AI/ML', enabled: true },
-        { id: 'moodix', icon: 'fas fa-brain', title: 'Moodix', description: 'AI-Powered Study Planner and Burnout Detection system using Java, MySQL, and custom AI logic.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', domain: 'AI/ML', enabled: true },
-        { id: 'signalstack', icon: 'fas fa-signal', title: 'SignalStack', description: 'Real-Time Data Pipeline for Sensor Anomaly Detection with Python, Pandas, Scikit-learn, and MongoDB.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', domain: 'Data Science', enabled: true },
-        { id: 'ledgerline', icon: 'fas fa-wallet', title: 'LedgerLine', description: 'Personal Finance Tracker with Predictive Budgeting powered by JavaScript, Node.js, and MySQL.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', domain: 'Web', enabled: true }
+        {
+          id: 'detoxa',
+          icon: 'fas fa-flask',
+          title: 'Detoxa',
+          description: 'Digital Wellness & Self-Regulation Research Platform built with Python, Machine Learning, PHP, and MySQL.',
+          domains: ['AI', 'Machine Learning'],
+          techStack: ['Python', 'Machine Learning', 'PHP', 'MySQL'],
+          images: [],
+          video: '',
+          githubUrl: 'https://github.com/iakashverma',
+          demoUrl: '',
+          enabled: true
+        },
+        {
+          id: 'moodix',
+          icon: 'fas fa-brain',
+          title: 'Moodix',
+          description: 'AI-Powered Study Planner and Burnout Detection system using Java, MySQL, and custom AI logic.',
+          domains: ['AI', 'Machine Learning'],
+          techStack: ['Java', 'MySQL', 'AI Logic'],
+          images: [],
+          video: '',
+          githubUrl: 'https://github.com/iakashverma',
+          demoUrl: '',
+          enabled: true
+        },
+        {
+          id: 'signalstack',
+          icon: 'fas fa-signal',
+          title: 'SignalStack',
+          description: 'Real-Time Data Pipeline for Sensor Anomaly Detection with Python, Pandas, Scikit-learn, and MongoDB.',
+          domains: ['Data Science', 'Machine Learning'],
+          techStack: ['Python', 'Pandas', 'Scikit-learn', 'MongoDB'],
+          images: [],
+          video: '',
+          githubUrl: 'https://github.com/iakashverma',
+          demoUrl: '',
+          enabled: true
+        },
+        {
+          id: 'ledgerline',
+          icon: 'fas fa-wallet',
+          title: 'LedgerLine',
+          description: 'Personal Finance Tracker with Predictive Budgeting powered by JavaScript, Node.js, and MySQL.',
+          domains: ['Web Development'],
+          techStack: ['JavaScript', 'Node.js', 'MySQL'],
+          images: [],
+          video: '',
+          githubUrl: 'https://github.com/iakashverma',
+          demoUrl: '',
+          enabled: true
+        }
       ]
     },
 
@@ -128,9 +183,45 @@ const PortfolioData = (() => {
       title: 'Certifications earned',
       subtitle: 'Verified credentials from industry leaders and top universities.',
       items: [
-        { id: 'ml', icon: 'fas fa-robot', title: 'Machine Learning Specialization', description: 'Comprehensive ML program covering supervised, unsupervised, and deep learning — by DeepLearning.AI & Stanford Online.', url: '#', enabled: true },
-        { id: 'python', icon: 'fab fa-python', title: 'Python for Data Science', description: 'Data analysis, visualization, and scientific computing with Python — certified by IBM.', url: '#', enabled: true },
-        { id: 'fullstack', icon: 'fas fa-layer-group', title: 'Full-Stack Web Development', description: 'End-to-end web engineering covering frontend, backend, databases, and deployment — certified by Meta.', url: '#', enabled: true }
+        {
+          id: 'ml',
+          icon: 'fas fa-robot',
+          title: 'Machine Learning Specialization',
+          org: 'DeepLearning.AI & Stanford Online',
+          issueDate: '2024',
+          credentialId: 'STANFORD-ML-2024',
+          description: 'Comprehensive ML program covering supervised, unsupervised, and deep learning — by DeepLearning.AI & Stanford Online.',
+          sourceType: 'image',
+          imageUrl: '',
+          url: '',
+          enabled: true
+        },
+        {
+          id: 'python',
+          icon: 'fab fa-python',
+          title: 'Python for Data Science',
+          org: 'IBM',
+          issueDate: '2023',
+          credentialId: 'IBM-PY-8842',
+          description: 'Data analysis, visualization, and scientific computing with Python — certified by IBM.',
+          sourceType: 'image',
+          imageUrl: '',
+          url: '',
+          enabled: true
+        },
+        {
+          id: 'fullstack',
+          icon: 'fas fa-layer-group',
+          title: 'Full-Stack Web Development',
+          org: 'Meta',
+          issueDate: '2023',
+          credentialId: 'META-FS-9102',
+          description: 'End-to-end web engineering covering frontend, backend, databases, and deployment — certified by Meta.',
+          sourceType: 'image',
+          imageUrl: '',
+          url: '',
+          enabled: true
+        }
       ]
     },
 

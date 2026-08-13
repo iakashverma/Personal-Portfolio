@@ -127,27 +127,174 @@ document.addEventListener('DOMContentLoaded', () => {
   initIntroScreen();
 
   // ==========================================
+  // ==========================================
   // 1. GALLERY DATASET & LIGHTBOX MODAL
   // ==========================================
   const lightboxModal = document.getElementById('gallery-lightbox');
   const lightboxClose = document.getElementById('lightbox-close');
   const lightboxImg = document.getElementById('lightbox-img');
+  const lightboxVideo = document.getElementById('lightbox-video');
+  const lightboxCounter = document.getElementById('lightbox-counter');
+  const lightboxPrev = document.getElementById('lightbox-prev');
+  const lightboxNext = document.getElementById('lightbox-next');
   const lightboxBadge = document.getElementById('lightbox-badge');
   const lightboxDate = document.getElementById('lightbox-date');
   const lightboxTitle = document.getElementById('lightbox-title');
   const lightboxCaption = document.getElementById('lightbox-caption');
+  const lightboxZoomIn = document.getElementById('lightbox-zoom-in');
+  const lightboxZoomOut = document.getElementById('lightbox-zoom-out');
+  const lightboxZoomReset = document.getElementById('lightbox-zoom-reset');
+  const lightboxZoomLevel = document.getElementById('lightbox-zoom-level');
+  const lightboxMediaWrapper = document.getElementById('lightbox-media-wrapper');
+  const lightboxMediaContainer = document.querySelector('.lightbox-media-container');
 
-  const openLightbox = (item) => {
-    if (!lightboxModal || !item) return;
+  let currentLightboxItems = [];
+  let currentLightboxIndex = 0;
+  let currentLightboxMeta = {};
+  let currentZoom = 1.0;
+  const MIN_ZOOM = 0.50; // 50% minimum zoom
+  const MAX_ZOOM = 3.00; // 300% maximum zoom
+  const ZOOM_STEP = 0.02; // Exact 2% increment per click
+
+  const applyZoom = (zoom) => {
+    // Round to clean 2 decimal places (e.g. 0.98, 1.00, 1.02, 1.04)
+    const rounded = Math.round(zoom * 100) / 100;
+    currentZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, rounded));
+
+    const percentage = Math.round(currentZoom * 100);
+    if (lightboxZoomLevel) {
+      lightboxZoomLevel.textContent = `${percentage}%`;
+    }
 
     if (lightboxImg) {
-      lightboxImg.src = item.src;
-      lightboxImg.alt = item.title || 'Gallery image';
+      if (percentage === 100) {
+        lightboxImg.style.width = '100%';
+        lightboxImg.style.height = '100%';
+        lightboxImg.style.maxWidth = '100%';
+        lightboxImg.style.maxHeight = '100%';
+        if (lightboxMediaWrapper) {
+          lightboxMediaWrapper.classList.remove('is-zoomed');
+          lightboxMediaWrapper.scrollTop = 0;
+          lightboxMediaWrapper.scrollLeft = 0;
+        }
+      } else if (percentage < 100) {
+        lightboxImg.style.width = 'auto';
+        lightboxImg.style.height = 'auto';
+        lightboxImg.style.maxWidth = `${percentage}%`;
+        lightboxImg.style.maxHeight = `${percentage}%`;
+        if (lightboxMediaWrapper) {
+          lightboxMediaWrapper.classList.remove('is-zoomed');
+          lightboxMediaWrapper.scrollTop = 0;
+          lightboxMediaWrapper.scrollLeft = 0;
+        }
+      } else {
+        lightboxImg.style.maxWidth = 'none';
+        lightboxImg.style.maxHeight = 'none';
+        lightboxImg.style.width = `${percentage}%`;
+        lightboxImg.style.height = 'auto';
+        if (lightboxMediaWrapper) {
+          lightboxMediaWrapper.classList.add('is-zoomed');
+        }
+      }
     }
-    if (lightboxBadge) lightboxBadge.textContent = item.category || '';
-    if (lightboxDate) lightboxDate.textContent = item.date || '';
-    if (lightboxTitle) lightboxTitle.textContent = item.title || '';
-    if (lightboxCaption) lightboxCaption.textContent = item.caption || '';
+  };
+
+  const renderLightboxSlide = () => {
+    if (!currentLightboxItems.length) return;
+    const currentItem = currentLightboxItems[currentLightboxIndex];
+    if (!currentItem) return;
+
+    applyZoom(1);
+
+    const total = currentLightboxItems.length;
+
+    // Counter display (e.g. 1/2)
+    if (lightboxCounter) {
+      if (total > 1) {
+        lightboxCounter.textContent = `${currentLightboxIndex + 1}/${total}`;
+        lightboxCounter.style.display = 'inline-block';
+      } else {
+        lightboxCounter.style.display = 'none';
+      }
+    }
+
+    // Navigation buttons display
+    if (lightboxPrev) {
+      lightboxPrev.style.display = total > 1 ? 'flex' : 'none';
+    }
+    if (lightboxNext) {
+      lightboxNext.style.display = total > 1 ? 'flex' : 'none';
+    }
+
+    // Render media (image or video)
+    const isVideo = currentItem.type === 'video' || (typeof currentItem.src === 'string' && currentItem.src.toLowerCase().endsWith('.mp4'));
+    if (isVideo) {
+      if (lightboxImg) lightboxImg.style.display = 'none';
+      if (lightboxVideo) {
+        lightboxVideo.style.display = 'block';
+        lightboxVideo.src = currentItem.src || currentItem.url;
+        lightboxVideo.load();
+      }
+    } else {
+      if (lightboxVideo) {
+        lightboxVideo.pause();
+        lightboxVideo.style.display = 'none';
+      }
+      if (lightboxImg) {
+        lightboxImg.style.display = 'block';
+        lightboxImg.src = currentItem.src || currentItem.url;
+        lightboxImg.alt = currentLightboxMeta.title || 'Preview image';
+      }
+    }
+
+    if (lightboxBadge) {
+      lightboxBadge.textContent = currentLightboxMeta.category || '';
+      lightboxBadge.style.display = currentLightboxMeta.category ? 'inline-flex' : 'none';
+    }
+    if (lightboxDate) {
+      lightboxDate.textContent = currentLightboxMeta.date || '';
+      lightboxDate.style.display = currentLightboxMeta.date ? 'inline-block' : 'none';
+    }
+    if (lightboxTitle) {
+      lightboxTitle.textContent = currentLightboxMeta.title || '';
+      lightboxTitle.style.display = currentLightboxMeta.title ? 'block' : 'none';
+    }
+    if (lightboxCaption) {
+      const captionText = currentItem.caption || currentLightboxMeta.caption || '';
+      lightboxCaption.textContent = captionText;
+      lightboxCaption.style.display = captionText ? 'block' : 'none';
+    }
+  };
+
+  const openLightbox = (payload) => {
+    if (!lightboxModal || !payload) return;
+
+    // Normalize payload to items array
+    if (Array.isArray(payload.items) && payload.items.length) {
+      currentLightboxItems = payload.items;
+      currentLightboxIndex = payload.initialIndex || 0;
+      currentLightboxMeta = {
+        title: payload.title || '',
+        category: payload.category || '',
+        date: payload.date || '',
+        caption: payload.caption || ''
+      };
+    } else {
+      currentLightboxItems = [{
+        src: payload.src || payload.url,
+        type: payload.type || 'image',
+        caption: payload.caption || ''
+      }];
+      currentLightboxIndex = 0;
+      currentLightboxMeta = {
+        title: payload.title || '',
+        category: payload.category || '',
+        date: payload.date || '',
+        caption: payload.caption || ''
+      };
+    }
+
+    renderLightboxSlide();
 
     lightboxModal.classList.add('is-open');
     lightboxModal.setAttribute('aria-hidden', 'false');
@@ -156,22 +303,165 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const closeLightbox = () => {
     if (!lightboxModal) return;
+    if (lightboxVideo) {
+      lightboxVideo.pause();
+      lightboxVideo.src = '';
+    }
+    applyZoom(1);
     lightboxModal.classList.remove('is-open');
     lightboxModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   };
 
+  const nextLightboxSlide = () => {
+    if (currentLightboxItems.length <= 1) return;
+    currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxItems.length;
+    renderLightboxSlide();
+  };
+
+  const prevLightboxSlide = () => {
+    if (currentLightboxItems.length <= 1) return;
+    currentLightboxIndex = (currentLightboxIndex - 1 + currentLightboxItems.length) % currentLightboxItems.length;
+    renderLightboxSlide();
+  };
+
+  if (lightboxPrev) {
+    lightboxPrev.addEventListener('click', (e) => {
+      e.stopPropagation();
+      prevLightboxSlide();
+    });
+  }
+
+  if (lightboxNext) {
+    lightboxNext.addEventListener('click', (e) => {
+      e.stopPropagation();
+      nextLightboxSlide();
+    });
+  }
+
   if (lightboxClose) {
     lightboxClose.addEventListener('click', closeLightbox);
   }
 
+  if (lightboxZoomIn) {
+    lightboxZoomIn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      applyZoom(currentZoom + ZOOM_STEP);
+    });
+  }
+
+  if (lightboxZoomOut) {
+    lightboxZoomOut.addEventListener('click', (e) => {
+      e.stopPropagation();
+      applyZoom(currentZoom - ZOOM_STEP);
+    });
+  }
+
+  if (lightboxZoomReset) {
+    lightboxZoomReset.addEventListener('click', (e) => {
+      e.stopPropagation();
+      applyZoom(1);
+    });
+  }
+
+  if (lightboxZoomLevel) {
+    lightboxZoomLevel.addEventListener('click', (e) => {
+      e.stopPropagation();
+      applyZoom(1);
+    });
+  }
+
+  if (lightboxMediaContainer) {
+    lightboxMediaContainer.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          applyZoom(currentZoom + ZOOM_STEP);
+        } else {
+          applyZoom(currentZoom - ZOOM_STEP);
+        }
+      }
+    }, { passive: false });
+  }
+
   if (lightboxModal) {
     lightboxModal.addEventListener('click', (e) => {
-      if (e.target === lightboxModal) {
+      if (e.target === lightboxModal || e.target.classList.contains('lightbox-modal')) {
         closeLightbox();
       }
     });
   }
+
+  // Keyboard navigation for lightbox
+  document.addEventListener('keydown', (e) => {
+    if (!lightboxModal || !lightboxModal.classList.contains('is-open')) return;
+    if (e.key === 'Escape') {
+      closeLightbox();
+    } else if (e.key === 'ArrowLeft') {
+      prevLightboxSlide();
+    } else if (e.key === 'ArrowRight') {
+      nextLightboxSlide();
+    } else if (e.key === '+' || e.key === '=' || e.key === 'z' || e.key === 'Z') {
+      e.preventDefault();
+      applyZoom(currentZoom + ZOOM_STEP);
+    } else if (e.key === '-' || e.key === '_') {
+      e.preventDefault();
+      applyZoom(currentZoom - ZOOM_STEP);
+    } else if (e.key === '0') {
+      e.preventDefault();
+      applyZoom(1);
+    }
+  });
+
+  // --- Resume Lightbox Viewer Trigger ---
+  const handleOpenResumeLightbox = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const currentHero = typeof PortfolioData !== 'undefined' ? PortfolioData.get('hero') : null;
+    const resumePages = currentHero?.resumePages;
+    const resumeUrl = currentHero?.ctaSecondary?.url;
+
+    if (Array.isArray(resumePages) && resumePages.length > 0) {
+      const items = resumePages.map((p) => ({
+        src: typeof p === 'string' ? p : (p.src || p.url),
+        caption: ''
+      }));
+
+      openLightbox({
+        items: items,
+        initialIndex: 0,
+        title: 'Akash Resume',
+        category: '',
+        caption: ''
+      });
+    } else if (resumeUrl && String(resumeUrl).trim() && resumeUrl !== '#' && !resumeUrl.includes('drive.google.com')) {
+      openLightbox({
+        src: resumeUrl,
+        title: 'Akash Resume',
+        category: '',
+        caption: ''
+      });
+    } else {
+      openLightbox({
+        src: 'images/profile.png',
+        title: 'Akash Resume',
+        category: '',
+        caption: ''
+      });
+    }
+  };
+
+  const bindResumeButtons = () => {
+    const resumeBtns = document.querySelectorAll('#hero-resume-btn, .hero-actions .btn-secondary');
+    resumeBtns.forEach(btn => {
+      btn.removeEventListener('click', handleOpenResumeLightbox);
+      btn.addEventListener('click', handleOpenResumeLightbox);
+    });
+  };
+
+  bindResumeButtons();
 
   // ==========================================
   // 1.5. DYNAMIC CMS CONTENT RENDERER
@@ -232,17 +522,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const heroCtaPrimary = document.querySelector('.hero-actions a.btn-primary');
         if (heroCtaPrimary && data.hero.ctaPrimary) {
-          heroCtaPrimary.href = data.hero.ctaPrimary.url || '#fieldlog';
-          const icon = data.hero.ctaPrimary.icon || 'fas fa-arrow-down';
-          heroCtaPrimary.innerHTML = `<i class="${escHTML(icon)}"></i><span>${escHTML(data.hero.ctaPrimary.text || 'View Projects')}</span>`;
+          heroCtaPrimary.href = data.hero.ctaPrimary.url || '#connect';
+          const icon = data.hero.ctaPrimary.icon || 'fas fa-paper-plane';
+          heroCtaPrimary.innerHTML = `<i class="${escHTML(icon)}"></i><span>${escHTML(data.hero.ctaPrimary.text || 'Hire Me')}</span>`;
         }
 
-        const heroCtaSecondary = document.querySelector('.hero-actions a.btn-secondary');
+        const heroCtaSecondary = document.getElementById('hero-resume-btn') || document.querySelector('.hero-actions .btn-secondary');
         if (heroCtaSecondary && data.hero.ctaSecondary) {
-          heroCtaSecondary.href = data.hero.ctaSecondary.url || 'https://github.com/iakashverma';
-          const icon = data.hero.ctaSecondary.icon || 'fab fa-github';
-          heroCtaSecondary.innerHTML = `<i class="${escHTML(icon)}"></i><span>${escHTML(data.hero.ctaSecondary.text || 'View Source')}</span>`;
+          const icon = data.hero.ctaSecondary.icon || 'fas fa-file-pdf';
+          heroCtaSecondary.innerHTML = `<i class="${escHTML(icon)}"></i><span>${escHTML(data.hero.ctaSecondary.text || 'View Resume')}</span>`;
+          if (heroCtaSecondary.tagName === 'A') {
+            heroCtaSecondary.href = 'javascript:void(0)';
+            heroCtaSecondary.removeAttribute('target');
+          }
         }
+        bindResumeButtons();
       }
 
       // --- About ---
@@ -287,20 +581,114 @@ document.addEventListener('DOMContentLoaded', () => {
         if (projectsGrid && data.projects.items && projectsContainer) {
           const enabledProjects = data.projects.items.filter(p => p.enabled !== false);
           if (enabledProjects.length) {
-            projectsGrid.innerHTML = enabledProjects.map((p, index) => `
-              <article class="feature-card project-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
-                <div class="feature-card-icon">
-                  <i class="${escHTML(p.icon || 'fas fa-cube')}"></i>
-                </div>
-                <h3 class="feature-card-title">${escHTML(p.title)}</h3>
-                <p class="feature-card-desc">${escHTML(p.description)}</p>
-                <div class="project-actions">
-                  ${p.githubUrl ? `<a href="${escHTML(p.githubUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">GitHub</a>` : ''}
-                  ${p.demoUrl ? `<a href="${escHTML(p.demoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>` : ''}
-                  ${p.domain ? `<span class="btn-project-pill project-domain-pill">${escHTML(p.domain)}</span>` : ''}
-                </div>
-              </article>
-            `).join('');
+            projectsGrid.innerHTML = enabledProjects.map((p, index) => {
+              // Extract media items: all images first, then video as the final slide
+              const images = Array.isArray(p.images) ? p.images : [];
+              const hasVideo = Boolean(p.video && String(p.video).trim());
+              const mediaSlides = [
+                ...images.map(img => ({ type: 'image', src: typeof img === 'string' ? img : (img.url || img.src), caption: img.caption || '' })),
+                ...(hasVideo ? [{ type: 'video', src: p.video, caption: 'Project Video Demonstration' }] : [])
+              ].filter(item => item && item.src && String(item.src).trim());
+
+              const mainMedia = mediaSlides[0] || null;
+
+              // Extract domain categories & tech stack (clean up legacy 'Web' tag)
+              const rawDomains = Array.isArray(p.domains) && p.domains.length ? p.domains : (p.domain ? [p.domain] : []);
+              const domains = [...new Set(rawDomains.map(d => d === 'Web' ? 'Web Development' : d).filter(Boolean))];
+              const techStack = Array.isArray(p.techStack) && p.techStack.length ? p.techStack : (Array.isArray(p.tags) ? p.tags : []);
+
+              // Action buttons verification
+              const hasGithub = p.githubUrl && String(p.githubUrl).trim() && p.githubUrl !== '#';
+              const hasDemo = p.demoUrl && String(p.demoUrl).trim() && p.demoUrl !== '#';
+
+              let mediaHTML = '';
+              if (mainMedia) {
+                if (mainMedia.type === 'video') {
+                  mediaHTML = `
+                    <div class="project-card-media is-video" data-project-idx="${index}" tabindex="0" role="button" aria-label="View media for ${escHTML(p.title)}">
+                      <video src="${escHTML(mainMedia.src)}" preload="metadata" playsinline></video>
+                      <div class="project-media-hover-overlay">
+                        <i class="fas fa-play"></i> View Project
+                      </div>
+                    </div>
+                  `;
+                } else {
+                  mediaHTML = `
+                    <div class="project-card-media" data-project-idx="${index}" tabindex="0" role="button" aria-label="View media for ${escHTML(p.title)}">
+                      <img src="${escHTML(mainMedia.src)}" alt="${escHTML(p.title)}" loading="lazy">
+                      <div class="project-media-hover-overlay">
+                        <i class="fas fa-search-plus"></i> View Project
+                      </div>
+                    </div>
+                  `;
+                }
+              } else {
+                mediaHTML = `
+                  <div class="feature-card-icon">
+                    <i class="${escHTML(p.icon || 'fas fa-cube')}"></i>
+                  </div>
+                `;
+              }
+
+              return `
+                <article class="feature-card project-card ${index >= 6 ? 'is-hidden-card' : ''}" data-project-id="${escHTML(p.id)}" tabindex="0">
+                  ${mediaHTML}
+
+                  <h3 class="feature-card-title">${escHTML(p.title)}</h3>
+                  <p class="feature-card-desc">${escHTML(p.description)}</p>
+
+                  ${techStack.length ? `
+                    <div class="project-tech-stack-row">
+                      ${techStack.map(t => `<span class="project-tech-tag mono">${escHTML(t)}</span>`).join('')}
+                    </div>
+                  ` : ''}
+
+                  <div class="project-actions">
+                    ${hasGithub ? `<a href="${escHTML(p.githubUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill btn-github-link"><i class="fab fa-github"></i> GitHub</a>` : ''}
+                    ${hasDemo ? `<a href="${escHTML(p.demoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill btn-live-deploy"><i class="fas fa-arrow-up-right-from-square"></i> Live Deployment</a>` : ''}
+                    ${domains.map(d => `<span class="btn-project-pill project-domain-pill"><i class="fas fa-tag"></i> ${escHTML(d)}</span>`).join('')}
+                  </div>
+                </article>
+              `;
+            }).join('');
+
+            // Bind click on project card media to open full fullscreen/lightbox with all slides
+            projectsGrid.querySelectorAll('.project-card-media').forEach(mediaEl => {
+              const handleOpen = (e) => {
+                e.stopPropagation();
+                const idx = parseInt(mediaEl.getAttribute('data-project-idx'), 10);
+                const proj = enabledProjects[idx];
+                if (!proj) return;
+
+                const projImages = Array.isArray(proj.images) ? proj.images : [];
+                const projHasVideo = Boolean(proj.video && String(proj.video).trim());
+                const slides = [
+                  ...projImages.map(img => ({ type: 'image', src: typeof img === 'string' ? img : (img.url || img.src), caption: img.caption || '' })),
+                  ...(projHasVideo ? [{ type: 'video', src: proj.video, caption: 'Project Video Demonstration' }] : [])
+                ].filter(item => item && item.src && String(item.src).trim());
+
+                if (!slides.length) return;
+
+                const rawDomains = Array.isArray(proj.domains) && proj.domains.length ? proj.domains : (proj.domain ? [proj.domain] : []);
+                const catText = [...new Set(rawDomains.map(d => d === 'Web' ? 'Web Development' : d).filter(Boolean))].join(' • ') || 'Project Media';
+
+                openLightbox({
+                  items: slides,
+                  initialIndex: 0,
+                  title: proj.title,
+                  category: catText,
+                  caption: proj.description || ''
+                });
+              };
+
+              mediaEl.addEventListener('click', handleOpen);
+              mediaEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleOpen(e);
+                }
+              });
+            });
 
             const oldProjectToggle = projectsContainer.querySelector('.section-toggle-wrapper[data-for="projects"]');
             if (oldProjectToggle) oldProjectToggle.remove();
@@ -408,19 +796,89 @@ document.addEventListener('DOMContentLoaded', () => {
         if (certsGrid && data.certifications.items && certsContainer) {
           const enabledCerts = data.certifications.items.filter(c => c.enabled !== false);
           if (enabledCerts.length) {
-            certsGrid.innerHTML = enabledCerts.map((c, index) => `
-              <article class="feature-card cert-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
-                <div class="feature-card-icon">
-                  <i class="${escHTML(c.icon || 'fas fa-certificate')}"></i>
-                </div>
-                <h3 class="feature-card-title">${escHTML(c.title)}</h3>
-                <p class="feature-card-desc">${escHTML(c.description)}</p>
-                <a href="${escHTML(c.url || '#')}" target="_blank" rel="noopener noreferrer" class="btn-view-cert">
-                  <span>View Certificate</span>
-                  <span class="cert-arrow">→</span>
-                </a>
-              </article>
-            `).join('');
+            certsGrid.innerHTML = enabledCerts.map((c, index) => {
+              const hasImg = Boolean(c.imageUrl && String(c.imageUrl).trim());
+              const org = c.org || '';
+              const date = c.issueDate || '';
+              const credId = c.credentialId || '';
+
+              return `
+                <article class="feature-card cert-card ${index >= 6 ? 'is-hidden-card' : ''}" data-cert-index="${index}" tabindex="0">
+                  ${hasImg ? `
+                    <div class="cert-card-media" data-cert-idx="${index}">
+                      <img src="${escHTML(c.imageUrl)}" alt="${escHTML(c.title)}" loading="lazy">
+                      <div class="cert-media-hover-overlay">
+                        <i class="fas fa-search-plus"></i> View Certificate
+                      </div>
+                    </div>
+                  ` : `
+                    <div class="feature-card-icon">
+                      <i class="${escHTML(c.icon || 'fas fa-certificate')}"></i>
+                    </div>
+                  `}
+
+                  ${(org || date) ? `
+                    <div class="cert-meta-header">
+                      ${org ? `<span class="cert-org-badge"><i class="fas fa-award"></i> ${escHTML(org)}</span>` : ''}
+                      ${date ? `<span class="cert-date-tag">${escHTML(date)}</span>` : ''}
+                    </div>
+                  ` : ''}
+
+                  <h3 class="feature-card-title">${escHTML(c.title)}</h3>
+
+                  ${credId ? `<div class="cert-id-tag mono">Credential ID: ${escHTML(credId)}</div>` : ''}
+
+                  <p class="feature-card-desc">${escHTML(c.description)}</p>
+
+                  <button type="button" class="btn-view-cert" data-cert-idx="${index}" aria-label="View ${escHTML(c.title)}">
+                    <span>View Certificate</span>
+                    <span class="cert-arrow">→</span>
+                  </button>
+                </article>
+              `;
+            }).join('');
+
+            // Bind click events on "View Certificate" buttons and media banners to open Lightbox Image Modal
+            const handleOpenCertLightbox = (certIndex) => {
+              const cert = enabledCerts[certIndex];
+              if (!cert) return;
+
+              if (cert.imageUrl && String(cert.imageUrl).trim()) {
+                openLightbox({
+                  src: cert.imageUrl,
+                  title: cert.title,
+                  category: cert.org || 'Verified Certificate',
+                  date: cert.issueDate || '',
+                  caption: cert.description || ''
+                });
+              } else if (cert.url && String(cert.url).trim() && cert.url !== '#') {
+                window.open(cert.url, '_blank', 'noopener,noreferrer');
+              } else {
+                openLightbox({
+                  src: 'images/gallery_ai_presentation.png',
+                  title: cert.title,
+                  category: cert.org || 'Verified Credential',
+                  date: cert.issueDate || '',
+                  caption: cert.description || 'Verified certificate issued for technical competency.'
+                });
+              }
+            };
+
+            certsGrid.querySelectorAll('.btn-view-cert').forEach(btn => {
+              btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.getAttribute('data-cert-idx'), 10);
+                handleOpenCertLightbox(idx);
+              });
+            });
+
+            certsGrid.querySelectorAll('.cert-card-media').forEach(mediaEl => {
+              mediaEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(mediaEl.getAttribute('data-cert-idx'), 10);
+                handleOpenCertLightbox(idx);
+              });
+            });
 
             const oldCertToggle = certsContainer.querySelector('.section-toggle-wrapper[data-for="certifications"]');
             if (oldCertToggle) oldCertToggle.remove();
@@ -1289,29 +1747,70 @@ document.addEventListener('DOMContentLoaded', () => {
     const getHeroVisualData = () => {
       const cmsHvData = typeof PortfolioData !== 'undefined' ? PortfolioData.get('heroVisual') : null;
 
-      const greeting = cmsHvData?.greeting || {
-        lang: 'GREETING.JS',
-        question: '"Welcome to my portfolio!"',
-        answer: 'Real-time developer console output & greeting statement.',
-        caption: 'Live Developer Console — Greeting',
-        lines: [
-          'console.<span class="syn-fn">log</span>(<span class="syn-str">"Hello, I\'m Akash Verma 👋"</span>);'
-        ]
+      const header = cmsHvData?.header || {
+        tab1Icon: 'fas fa-camera',
+        tab2Icon: 'fas fa-brain',
+        tab2Text: 'DEVELOPER',
+        tab3Icon: 'fas fa-code',
+        tab3Text: 'ABOUT_ME.TS',
+        statusDot: true,
+        windowLogoIcon: 'fas fa-circle-dot',
+        windowLogoText: 'AKASH'
       };
 
-      const aboutMe = cmsHvData?.aboutMe || {
-        lang: 'ABOUT_ME.TS',
-        question: '"Who is Akash Verma?"',
-        answer: 'Developer working across AI/ML, Data Science, and Web Engineering.',
-        caption: 'Developer Profile Configuration',
+      // Apply static header configurations
+      const visualTab = document.querySelector('.visual-tab');
+      if (visualTab) {
+        const tabIcons = visualTab.querySelectorAll('i');
+        const tabSpans = visualTab.querySelectorAll('span:not(.status-dot)');
+        const statusDot = visualTab.querySelector('.status-dot');
+
+        if (tabIcons[0] && header.tab1Icon) tabIcons[0].className = header.tab1Icon;
+        if (tabIcons[1] && header.tab2Icon) tabIcons[1].className = header.tab2Icon;
+        if (tabSpans[0] && header.tab2Text) tabSpans[0].textContent = header.tab2Text;
+        if (tabIcons[2] && header.tab3Icon) tabIcons[2].className = header.tab3Icon;
+        if (tabSpans[1] && header.tab3Text) tabSpans[1].textContent = header.tab3Text;
+        if (statusDot) statusDot.style.display = header.statusDot !== false ? 'inline-block' : 'none';
+      }
+
+      const windowLogo = document.querySelector('.visual-window-logo');
+      if (windowLogo) {
+        windowLogo.innerHTML = `<i class="${escHTML(header.windowLogoIcon || 'fas fa-circle-dot')}"></i> ${escHTML(header.windowLogoText || 'AKASH')}`;
+      }
+
+      const aboutMeData = cmsHvData?.aboutMe || {};
+      const devName = aboutMeData.devName || 'Akash Verma';
+      const devFocus = aboutMeData.devFocus || 'AI/ML · Data · Web';
+      const devLocation = aboutMeData.devLocation || 'Based in India';
+      const devBuilding = aboutMeData.devBuilding || 'MOODIX';
+
+      const aboutMe = {
+        lang: aboutMeData.lang || 'ABOUT_ME.TS',
+        question: aboutMeData.question || '"Who is Akash Verma?"',
+        answer: aboutMeData.answer || 'Developer working across AI/ML, Data Science, and Web Engineering.',
+        caption: aboutMeData.caption || 'Developer Profile Configuration',
         lines: [
           '<span class="syn-kw">const</span> developer <span class="syn-op">=</span> {',
-          '  name: <span class="syn-str">"Akash Verma"</span>,',
-          '  focus: <span class="syn-str">"AI/ML · Data · Web"</span>,',
-          '  location: <span class="syn-str">"Based in India"</span>,',
-          '  building: <span class="syn-str">"MOODIX"</span>',
+          `  name: <span class="syn-str">"${escHTML(devName)}"</span>,`,
+          `  focus: <span class="syn-str">"${escHTML(devFocus)}"</span>,`,
+          `  location: <span class="syn-str">"${escHTML(devLocation)}"</span>,`,
+          `  building: <span class="syn-str">"${escHTML(devBuilding)}"</span>`,
           '};'
-        ]
+        ],
+        enabled: aboutMeData.enabled !== false
+      };
+
+      const greetingData = cmsHvData?.greeting || {};
+      const greetMsg = greetingData.greetingText || "Hello, I'm Akash Verma 👋";
+      const greeting = {
+        lang: greetingData.lang || 'GREETING.JS',
+        question: greetingData.question || '"Welcome to my portfolio!"',
+        answer: greetingData.answer || 'Real-time developer console output & greeting statement.',
+        caption: greetingData.caption || 'Live Developer Console — Greeting',
+        lines: [
+          `console.<span class="syn-fn">log</span>(<span class="syn-str">"${escHTML(greetMsg).replace(/"/g, '\\"')}"</span>);`
+        ],
+        enabled: greetingData.enabled !== false
       };
 
       const motQuotes = cmsHvData?.motivationalQuotes
@@ -1328,7 +1827,7 @@ document.addEventListener('DOMContentLoaded', () => {
           "I don't have bugs. I have unexpected features."
         ];
 
-      return { greeting, aboutMe, motQuotes, funQuotes };
+      return { header, aboutMe, greeting, motQuotes, funQuotes };
     };
 
     let activeTimeoutId = null;
@@ -1350,12 +1849,12 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     };
 
-    // Reduced motion support: render greeting static
+    // Reduced motion support: render about me static
     if (prefersReducedMotion) {
       const initialData = getHeroVisualData();
-      codeContainer.innerHTML = initialData.greeting.lines.join('\n');
-      if (captionEl) captionEl.textContent = initialData.greeting.caption;
-      if (tabLangEl) tabLangEl.textContent = initialData.greeting.lang;
+      codeContainer.innerHTML = initialData.aboutMe.lines.join('\n');
+      if (captionEl) captionEl.textContent = initialData.aboutMe.caption;
+      if (tabLangEl) tabLangEl.textContent = initialData.aboutMe.lang;
     } else {
       const caret = document.createElement('span');
       caret.className = 'typing-cursor';
@@ -1455,18 +1954,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       };
 
-      // Main Sequence Loop Engine: 1 Greeting -> 1 About Me -> 2 Motivational -> 2 Funny -> Repeat
+      // Main Sequence Loop Engine: About Me -> Greeting -> Motivational -> Funny -> Repeat
       const runMasterLoop = async () => {
         while (isTypingActive) {
-          const { greeting, aboutMe, motQuotes, funQuotes } = getHeroVisualData();
+          const { aboutMe, greeting, motQuotes, funQuotes } = getHeroVisualData();
 
-          // 1. GREETING (1)
-          await typeSnippet(greeting, 2400);
-          await clearCodeArea();
+          // 1. ABOUT ME (Primary Profile Snippet)
+          if (aboutMe.enabled) {
+            await typeSnippet(aboutMe, 3200);
+            await clearCodeArea();
+          }
 
-          // 2. ABOUT ME (1)
-          await typeSnippet(aboutMe, 3200);
-          await clearCodeArea();
+          // 2. GREETING
+          if (greeting.enabled) {
+            await typeSnippet(greeting, 2400);
+            await clearCodeArea();
+          }
 
           // 3. MOTIVATIONAL QUOTES
           for (let i = 0; i < motQuotes.length; i++) {
@@ -1483,8 +1986,6 @@ document.addEventListener('DOMContentLoaded', () => {
             await typeSnippet(quoteSnippet, 2400);
             await clearCodeArea();
           }
-
-          // Sequence loops back to 1 Greeting
         }
       };
 

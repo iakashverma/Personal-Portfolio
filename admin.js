@@ -66,7 +66,11 @@
   // ============================================================
   // EDIT MODAL
   // ============================================================
-  const showEditModal = (title, fieldsHTML, onSave) => {
+  const showEditModal = (title, fieldsHTML, onSave, modalClass = '') => {
+    const modalEl = document.querySelector('.edit-modal');
+    if (modalEl) {
+      modalEl.className = `edit-modal ${modalClass}`.trim();
+    }
     document.getElementById('edit-modal-title').textContent = title;
     document.getElementById('edit-modal-body').innerHTML = fieldsHTML;
     document.getElementById('edit-modal-overlay').classList.add('show');
@@ -75,6 +79,8 @@
 
   const closeEditModal = () => {
     document.getElementById('edit-modal-overlay').classList.remove('show');
+    const modalEl = document.querySelector('.edit-modal');
+    if (modalEl) modalEl.className = 'edit-modal';
     editModalCallback = null;
   };
 
@@ -148,6 +154,92 @@
 
   const editedBadge = (section) => {
     return PortfolioData.isEdited(section) ? `<span class="edited-badge"><i class="fas fa-pen"></i> Edited</span>` : '';
+  };
+
+  // --- Client-Side Multi-Page PDF to High-Res WebP Image Converter ---
+  const convertPdfToAllPagesWebP = (file, scale = 2.0, quality = 0.88) => {
+    return new Promise((resolve, reject) => {
+      if (!window.pdfjsLib) {
+        return reject(new Error('PDF.js library failed to load. Please check your internet connection or reload the page.'));
+      }
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Failed to read PDF file.'));
+      reader.onload = async function () {
+        try {
+          const typedArray = new Uint8Array(this.result);
+          const loadingTask = window.pdfjsLib.getDocument({ data: typedArray });
+          const pdf = await loadingTask.promise;
+          if (pdf.numPages < 1) {
+            return reject(new Error('The uploaded PDF does not contain any pages.'));
+          }
+
+          const pageImages = [];
+          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale });
+
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+
+            const renderContext = {
+              canvasContext: ctx,
+              viewport: viewport
+            };
+            await page.render(renderContext).promise;
+
+            let dataUrl = canvas.toDataURL('image/webp', quality);
+            if (!dataUrl.startsWith('data:image/webp')) {
+              dataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+            pageImages.push({
+              src: dataUrl,
+              caption: pdf.numPages > 1 ? `Page ${pageNum} of ${pdf.numPages}` : ''
+            });
+          }
+          resolve(pageImages);
+        } catch (err) {
+          reject(new Error('PDF conversion error: ' + err.message));
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  // --- Client-Side Image File to WebP Converter ---
+  const compressImageFileToWebP = (file, maxWidth = 1600, quality = 0.88) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Failed to read image file.'));
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Failed to load image.'));
+        img.onload = () => {
+          let width = img.naturalWidth || img.width;
+          let height = img.naturalHeight || img.height;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          let dataUrl = canvas.toDataURL('image/webp', quality);
+          if (!dataUrl.startsWith('data:image/webp')) {
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+          resolve(dataUrl);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleSaveResult = (res, defaultMsg = 'Saved & synchronized globally!') => {
@@ -616,86 +708,250 @@
   // ============================================================
   // HERO SECTION EDITOR
   // ============================================================
+  // ============================================================
+  // HERO SECTION EDITOR (Home Section & Resume)
+  // ============================================================
   const renderHero = () => {
-    const data = PortfolioData.get('hero');
+    const data = PortfolioData.get('hero') || {};
+    const ctaPrimary = data.ctaPrimary || { text: 'Hire Me', url: '#connect', icon: 'fas fa-paper-plane' };
+    const ctaSecondary = data.ctaSecondary || { text: 'View Resume', url: '', icon: 'fas fa-file-pdf' };
+
+    let currentResumePages = Array.isArray(data.resumePages) ? [...data.resumePages] : [];
+    if (currentResumePages.length === 0 && ctaSecondary.url && ctaSecondary.url !== '#') {
+      currentResumePages = [{ src: ctaSecondary.url, caption: 'Resume Page 1' }];
+    }
+
+    const renderResumePagesPreview = () => {
+      const previewContainer = document.getElementById('hero-resume-pages-list');
+      if (!previewContainer) return;
+
+      if (currentResumePages.length === 0) {
+        previewContainer.innerHTML = `
+          <div style="font-size:12.5px;color:var(--text-muted);font-style:italic;">
+            No resume pages uploaded yet. Upload a PDF or Image above to display your resume in the Lightbox viewer.
+          </div>
+        `;
+        return;
+      }
+
+      previewContainer.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12.5px;color:#10b981;font-weight:600;">
+          <i class="fas fa-check-circle"></i> Ready for Lightbox Viewer (${currentResumePages.length} page${currentResumePages.length > 1 ? 's' : ''})
+        </div>
+        <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;">
+          ${currentResumePages.map((page, idx) => `
+            <div style="position:relative;width:100px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);overflow:hidden;background:#000;flex-shrink:0;">
+              <img src="${esc(page.src)}" alt="Page ${idx + 1}" style="width:100%;height:130px;object-fit:contain;display:block;">
+              <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.75);font-size:10px;text-align:center;color:#fff;padding:2px 0;">
+                Page ${idx + 1}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    };
+
     mainEl.innerHTML = `
       <div class="admin-main-header">
         <div>
-          <h1 class="admin-page-title">Hero Section</h1>
-          <p class="admin-page-subtitle">Manage the main landing area content.</p>
+          <h1 class="admin-page-title">Home Section</h1>
+          <p class="admin-page-subtitle">Manage the landing banner, call-to-action buttons, and Resume document.</p>
         </div>
         ${editedBadge('hero')}
       </div>
+
+      <!-- Hero Header & Content -->
       <div class="editor-card">
         <div class="editor-card-header">
-          <span class="editor-card-title">Hero Content</span>
+          <span class="editor-card-title"><i class="fas fa-bullhorn" style="color:var(--accent);margin-right:8px;"></i> Banner Content</span>
         </div>
         <div class="editor-card-body">
           <div class="field-group">
-            <label class="field-label">Badge Text</label>
-            <input type="text" class="field-input" id="hero-badge" value="${esc(data.badge)}">
+            <label class="field-label">Status Badge Text</label>
+            <input type="text" class="field-input" id="hero-badge" value="${esc(data.badge || 'Open to work · Full-time & freelance')}">
           </div>
           <div class="field-group">
             <label class="field-label">Headline (use &lt;br&gt; for line breaks)</label>
-            <textarea class="field-textarea" id="hero-headline" rows="3">${data.headline}</textarea>
+            <textarea class="field-textarea" id="hero-headline" rows="3">${data.headline || 'Building intelligent<br>systems people<br>actually use.'}</textarea>
           </div>
           <div class="field-group">
             <label class="field-label">Lead Paragraph</label>
-            <textarea class="field-textarea" id="hero-lead" rows="4">${esc(data.lead)}</textarea>
+            <textarea class="field-textarea" id="hero-lead" rows="4">${esc(data.lead || '')}</textarea>
           </div>
-          <div class="field-row">
-            <div class="field-group">
-              <label class="field-label">Primary CTA Text</label>
-              <input type="text" class="field-input" id="hero-cta-primary-text" value="${esc(data.ctaPrimary.text)}">
+        </div>
+      </div>
+
+      <!-- Action Buttons & Resume Management -->
+      <div class="editor-card">
+        <div class="editor-card-header">
+          <span class="editor-card-title"><i class="fas fa-mouse-pointer" style="color:#10b981;margin-right:8px;"></i> Call-to-Action Buttons &amp; Resume</span>
+        </div>
+        <div class="editor-card-body">
+          <!-- Button 1: Hire Me -->
+          <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;margin-bottom:18px;">
+            <div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+              <i class="fas fa-paper-plane" style="color:#10b981;"></i> Primary Button (Contact Redirect)
             </div>
-            <div class="field-group">
-              <label class="field-label">Primary CTA URL</label>
-              <input type="text" class="field-input" id="hero-cta-primary-url" value="${esc(data.ctaPrimary.url)}">
+            <div class="field-row">
+              <div class="field-group">
+                <label class="field-label">Button Text</label>
+                <input type="text" class="field-input" id="hero-cta-primary-text" value="${esc(ctaPrimary.text || 'Hire Me')}" placeholder="Hire Me">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Redirect Target URL / Section ID</label>
+                <input type="text" class="field-input" id="hero-cta-primary-url" value="${esc(ctaPrimary.url || '#connect')}" placeholder="#connect">
+                <span class="field-hint" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;display:block;">Use <code>#connect</code> to scroll directly to the Contact section.</span>
+              </div>
             </div>
           </div>
-          <div class="field-row">
-            <div class="field-group">
-              <label class="field-label">Secondary CTA Text</label>
-              <input type="text" class="field-input" id="hero-cta-secondary-text" value="${esc(data.ctaSecondary.text)}">
+
+          <!-- Button 2: View Resume -->
+          <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;">
+            <div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+              <i class="fas fa-file-pdf" style="color:#f43f5e;"></i> Secondary Button &amp; Resume Document (Lightbox Popup)
             </div>
-            <div class="field-group">
-              <label class="field-label">Secondary CTA URL</label>
-              <input type="text" class="field-input" id="hero-cta-secondary-url" value="${esc(data.ctaSecondary.url)}">
+
+            <div class="field-row">
+              <div class="field-group">
+                <label class="field-label">Button Text</label>
+                <input type="text" class="field-input" id="hero-cta-secondary-text" value="${esc(ctaSecondary.text || 'View Resume')}" placeholder="View Resume">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Direct Image / Document URL (Optional)</label>
+                <input type="text" class="field-input" id="hero-cta-secondary-url" value="${esc(ctaSecondary.url || '')}" placeholder="Paste URL or upload PDF/Image below">
+              </div>
+            </div>
+
+            <div class="resume-manager-box">
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);">
+                <i class="fas fa-cloud-upload-alt" style="color:#60a5fa;margin-right:6px;"></i> Upload Resume (PDF or Image)
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);">
+                Upload a <strong>PDF</strong> (all pages will be automatically converted to high-res WebP images) or an <strong>Image</strong> (JPG, PNG, WebP).
+              </div>
+
+              <div class="resume-actions-row">
+                <label class="btn-admin" style="cursor:pointer;background:rgba(96, 165, 250, 0.12);border-color:rgba(96, 165, 250, 0.3);color:#93c5fd;display:inline-flex;align-items:center;gap:8px;">
+                  <i class="fas fa-file-arrow-up"></i> Choose Resume File (PDF / Image)
+                  <input type="file" id="hero-resume-file" accept=".pdf,.png,.jpg,.jpeg,.webp" style="display:none;">
+                </label>
+                <span id="hero-resume-filename" style="font-size:12px;font-family:var(--font-mono);color:#10b981;"></span>
+                <button type="button" id="hero-resume-clear-btn" class="btn-admin" style="display:${currentResumePages.length > 0 ? 'inline-flex' : 'none'};background:rgba(244,63,94,0.1);border-color:rgba(244,63,94,0.3);color:#f43f5e;font-size:12px;padding:6px 12px;">
+                  <i class="fas fa-trash-alt"></i> Clear Resume
+                </button>
+              </div>
+
+              <!-- Converted Pages Preview -->
+              <div id="hero-resume-pages-list" style="margin-top:8px;"></div>
             </div>
           </div>
         </div>
-        <div class="editor-card-footer">
+
+        <div class="editor-card-footer" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
           <button class="btn-admin btn-cancel" id="hero-reset">Reset to Default</button>
-          <button class="btn-admin btn-save" id="hero-save"><i class="fas fa-check"></i> Save Changes</button>
+          <button class="btn-admin btn-save" id="hero-save"><i class="fas fa-check"></i> Save &amp; Publish Home Section</button>
         </div>
       </div>
     `;
 
+    renderResumePagesPreview();
+
+    // Direct URL input listener
+    const urlInput = document.getElementById('hero-cta-secondary-url');
+    if (urlInput) {
+      urlInput.addEventListener('input', () => {
+        const val = urlInput.value.trim();
+        if (val) {
+          currentResumePages = [{ src: val, caption: 'Resume' }];
+          renderResumePagesPreview();
+        }
+      });
+    }
+
+    // Clear resume button
+    const clearBtn = document.getElementById('hero-resume-clear-btn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        currentResumePages = [];
+        if (urlInput) urlInput.value = '';
+        const filenameLabel = document.getElementById('hero-resume-filename');
+        if (filenameLabel) filenameLabel.textContent = '';
+        clearBtn.style.display = 'none';
+        renderResumePagesPreview();
+        showToast('Resume cleared. Click Save to publish.', 'info');
+      });
+    }
+
+    // Resume File Upload Handling
+    const fileInput = document.getElementById('hero-resume-file');
+    const filenameLabel = document.getElementById('hero-resume-filename');
+    if (fileInput) {
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (filenameLabel) {
+          filenameLabel.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing ${esc(file.name)}...`;
+        }
+
+        try {
+          if (isPdf) {
+            const pages = await convertPdfToAllPagesWebP(file, 2.0, 0.88);
+            currentResumePages = pages;
+            if (urlInput) urlInput.value = pages[0]?.src || '';
+            if (filenameLabel) {
+              filenameLabel.textContent = `✓ Converted ${pages.length} page(s) from PDF (${(file.size / 1024).toFixed(1)} KB)`;
+            }
+          } else {
+            const dataUrl = await compressImageFileToWebP(file, 1600, 0.88);
+            currentResumePages = [{ src: dataUrl, caption: 'Resume' }];
+            if (urlInput) urlInput.value = dataUrl;
+            if (filenameLabel) {
+              filenameLabel.textContent = `✓ Uploaded Image (${(file.size / 1024).toFixed(1)} KB)`;
+            }
+          }
+          if (clearBtn) clearBtn.style.display = 'inline-flex';
+          renderResumePagesPreview();
+          showToast('Resume processed successfully! Click Save to publish.', 'success');
+        } catch (err) {
+          if (filenameLabel) filenameLabel.textContent = '❌ Error processing file: ' + err.message;
+          showToast('Error processing resume file: ' + err.message, 'danger');
+        }
+      });
+    }
+
     document.getElementById('hero-save').addEventListener('click', async () => {
+      const secUrl = document.getElementById('hero-cta-secondary-url').value.trim();
+      if (currentResumePages.length === 0 && secUrl) {
+        currentResumePages = [{ src: secUrl, caption: 'Resume' }];
+      }
+
       const updated = {
         badge: document.getElementById('hero-badge').value.trim(),
         headline: document.getElementById('hero-headline').value.trim(),
         lead: document.getElementById('hero-lead').value.trim(),
         ctaPrimary: {
-          text: document.getElementById('hero-cta-primary-text').value.trim(),
-          url: document.getElementById('hero-cta-primary-url').value.trim(),
-          icon: data.ctaPrimary.icon
+          text: document.getElementById('hero-cta-primary-text').value.trim() || 'Hire Me',
+          url: document.getElementById('hero-cta-primary-url').value.trim() || '#connect',
+          icon: 'fas fa-paper-plane'
         },
         ctaSecondary: {
-          text: document.getElementById('hero-cta-secondary-text').value.trim(),
-          url: document.getElementById('hero-cta-secondary-url').value.trim(),
-          icon: data.ctaSecondary.icon
-        }
+          text: document.getElementById('hero-cta-secondary-text').value.trim() || 'View Resume',
+          url: secUrl || (currentResumePages[0]?.src || ''),
+          icon: 'fas fa-file-pdf'
+        },
+        resumePages: currentResumePages
       };
       const res = await PortfolioData.setAsync('hero', updated);
-      handleSaveResult(res, 'Hero section saved & synchronized globally!');
+      handleSaveResult(res, 'Home section & Resume saved globally!');
       renderHero();
     });
 
     document.getElementById('hero-reset').addEventListener('click', () => {
-      showConfirm('Reset Hero?', 'This will revert to default hero content.', async () => {
+      showConfirm('Reset Home Section?', 'This will revert buttons, resume and banner content to default.', async () => {
         const res = await PortfolioData.resetAsync('hero');
-        handleResetResult(res, 'Hero section reset to default!');
+        handleResetResult(res, 'Home section reset to default!');
         renderHero();
       });
     });
@@ -924,7 +1180,7 @@
           { key: 'demoUrl', label: 'Live Demo URL', type: 'text' },
           { key: 'domain', label: 'Project Domain (e.g. AI/ML, Data Science, Web, IoT)', type: 'text' }
         ],
-        newItem: () => ({ id: genId(), icon: 'fas fa-cube', title: 'New Project', description: 'Project description here.', githubUrl: 'https://github.com/iakashverma', demoUrl: '#', domain: 'Web', enabled: true })
+        newItem: () => ({ id: genId(), icon: 'fas fa-cube', title: 'New Project', description: 'Project description here.', githubUrl: '', demoUrl: '', domains: ['Web Development'], enabled: true })
       },
       skills: {
         title: 'Skills', sub: 'Manage skill categories and tags.',
@@ -998,7 +1254,33 @@
         <div class="editor-card-body">
           <div class="editor-list" id="list-items">
             ${items.map((item, i) => {
-      const subVal = cfg.subField === 'tags' ? (item.tags || []).join(', ') : (item[cfg.subField] || '');
+      let subVal = cfg.subField === 'tags' ? (item.tags || []).join(', ') : (item[cfg.subField] || '');
+      if (sectionKey === 'projects') {
+        const imgCount = Array.isArray(item.images) ? item.images.length : 0;
+        const hasVid = Boolean(item.video && String(item.video).trim());
+        const domainStr = Array.isArray(item.domains) && item.domains.length ? item.domains.join(', ') : (item.domain || '');
+        const mediaBadges = [
+          domainStr ? `[${domainStr}]` : '',
+          imgCount ? `📷 ${imgCount} img` : '',
+          hasVid ? '🎬 Video' : ''
+        ].filter(Boolean).join(' • ');
+        if (mediaBadges) {
+          subVal = `${mediaBadges} — ${subVal}`;
+        }
+      } else if (sectionKey === 'certifications') {
+        const hasImg = Boolean(item.imageUrl && String(item.imageUrl).trim());
+        const orgStr = item.org || '';
+        const dateStr = item.issueDate || '';
+        const sourceLabel = item.sourceType === 'pdf' ? '📄 PDF' : (item.sourceType === 'url' ? '🔗 URL' : '🖼️ Image');
+        const badgeList = [
+          orgStr ? `[${orgStr}]` : '',
+          dateStr ? `${dateStr}` : '',
+          hasImg ? `(${sourceLabel} Image Ready)` : '(No Image)'
+        ].filter(Boolean).join(' • ');
+        if (badgeList) {
+          subVal = `${badgeList} — ${subVal}`;
+        }
+      }
       return `
               <div class="editor-list-item">
                 <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
@@ -1006,7 +1288,7 @@
                 </div>
                 <div class="editor-list-item-content">
                   <div class="editor-list-item-title">${esc(item[cfg.nameField])}</div>
-                  <div class="editor-list-item-sub">${esc(subVal.substring(0, 80))}${subVal.length > 80 ? '...' : ''}</div>
+                  <div class="editor-list-item-sub">${esc(subVal.substring(0, 90))}${subVal.length > 90 ? '...' : ''}</div>
                 </div>
                 <div class="editor-list-item-actions">
                   <button class="item-action-btn" title="Move up" data-action="up" data-i="${i}" ${i === 0 ? 'disabled' : ''}>
@@ -1102,8 +1384,857 @@
       });
     });
 
-    // Edit modal helper
+    // --- Media Processing Helpers ---
+    const optimizeImageToWebP = (file, maxWidth = 1200, maxHeight = 800, quality = 0.82) => {
+      return new Promise((resolve, reject) => {
+        if (!file || !file.type.startsWith('image/')) {
+          return reject(new Error('Selected file is not a valid image.'));
+        }
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Failed to read image file.'));
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('Invalid image content.'));
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            let dataUrl = canvas.toDataURL('image/webp', quality);
+            if (!dataUrl.startsWith('data:image/webp')) {
+              dataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+            resolve(dataUrl);
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    };
+
+    const readVideoAsDataUrl = (file, maxSizeBytes = 25 * 1024 * 1024) => {
+      return new Promise((resolve, reject) => {
+        const isMp4 = file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4');
+        if (!isMp4) {
+          return reject(new Error('Only .mp4 video files are supported.'));
+        }
+        if (file.size > maxSizeBytes) {
+          return reject(new Error(`Video exceeds ${Math.round(maxSizeBytes / (1024 * 1024))}MB. Please upload a smaller clip or provide a direct video URL.`));
+        }
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Failed to read video file.'));
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      });
+    };
+
+    // Dedicated Project Editor Modal
+    const openProjectModal = (items, idx) => {
+      const item = items[idx];
+      const isNew = idx === items.length - 1 && !PortfolioData.isEdited('projects');
+
+      // State copies & normalize legacy 'Web'
+      let activeDomains = Array.isArray(item.domains) && item.domains.length
+        ? item.domains.map(d => d === 'Web' ? 'Web Development' : d)
+        : (item.domain ? [item.domain === 'Web' ? 'Web Development' : item.domain] : ['Web Development']);
+      activeDomains = [...new Set(activeDomains.filter(Boolean))];
+
+      let activeTech = Array.isArray(item.techStack) && item.techStack.length
+        ? [...item.techStack]
+        : (Array.isArray(item.tags) ? [...item.tags] : []);
+
+      let activeImages = Array.isArray(item.images)
+        ? JSON.parse(JSON.stringify(item.images))
+        : [];
+
+      let activeVideo = item.video || '';
+
+      const DOMAIN_OPTIONS = [
+        'AI',
+        'Machine Learning',
+        'Data Science',
+        'Web Development',
+        'UI/UX Design',
+        'Mobile Development',
+        'Data Analytics',
+        'Other'
+      ];
+
+      const TECH_PRESETS = [
+        'Python', 'JavaScript', 'React', 'Node.js', 'HTML', 'CSS',
+        'Java', 'PHP', 'MySQL', 'MongoDB', 'TensorFlow', 'PyTorch',
+        'Scikit-learn', 'Next.js', 'FastAPI', 'TailwindCSS', 'PostgreSQL',
+        'Docker', 'Git', 'TypeScript', 'C++'
+      ];
+
+      const renderProjectEditorHTML = () => `
+        <div class="field-row">
+          <div class="field-group" style="flex:2;">
+            <label class="field-label">Project Title *</label>
+            <input type="text" class="field-input" id="proj-title" value="${esc(item.title || '')}" placeholder="e.g. Detoxa AI">
+          </div>
+          <div class="field-group" style="flex:1;">
+            <label class="field-label">Icon Class</label>
+            <input type="text" class="field-input" id="proj-icon" value="${esc(item.icon || 'fas fa-cube')}" placeholder="fas fa-flask">
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Project Description *</label>
+          <textarea class="field-textarea" id="proj-desc" rows="3" placeholder="Describe the purpose, features, and technical architecture of this project...">${esc(item.description || '')}</textarea>
+        </div>
+
+        <!-- Domain / Category Multi-Select -->
+        <div class="field-group">
+          <label class="field-label">Project Domain / Category (Multi-select)</label>
+          <div class="domain-pills-wrap" id="proj-domain-pills">
+            ${DOMAIN_OPTIONS.map(d => `
+              <span class="domain-pill-choice ${activeDomains.includes(d) ? 'selected' : ''}" data-domain="${esc(d)}">
+                <i class="fas fa-${activeDomains.includes(d) ? 'check' : 'tag'}"></i> ${esc(d)}
+              </span>
+            `).join('')}
+          </div>
+          <div id="proj-custom-domain-row" style="display:${activeDomains.includes('Other') || activeDomains.some(d => !DOMAIN_OPTIONS.includes(d)) ? 'flex' : 'none'};margin-top:8px;gap:8px;">
+            <input type="text" class="field-input" id="proj-custom-domain-input" placeholder="Enter custom domain..." value="${esc(activeDomains.find(d => !DOMAIN_OPTIONS.includes(d) && d !== 'Other') || '')}">
+          </div>
+        </div>
+
+        <!-- Tech Stack Tag Manager -->
+        <div class="field-group">
+          <label class="field-label">Project Tech Stack</label>
+          <div class="tech-stack-container">
+            <div class="tech-chips-list" id="proj-tech-chips">
+              ${activeTech.length ? activeTech.map((t, tIdx) => `
+                <span class="tech-chip">
+                  <span>${esc(t)}</span>
+                  <i class="fas fa-times tech-chip-remove" data-tidx="${tIdx}"></i>
+                </span>
+              `).join('') : '<span style="color:var(--text-muted);font-size:12px;">No tech tags added yet. Click presets below or type custom tag.</span>'}
+            </div>
+            <div class="tech-presets-label">Popular Tech Presets (Click to add):</div>
+            <div class="tech-presets-cloud">
+              ${TECH_PRESETS.map(p => `
+                <span class="tech-preset-pill" data-preset="${esc(p)}">+ ${esc(p)}</span>
+              `).join('')}
+            </div>
+            <div class="tech-custom-input-row">
+              <input type="text" class="field-input" id="proj-tech-input" placeholder="Type custom technology (e.g. Redis, OpenCV) and press Add...">
+              <button type="button" class="btn-admin" id="proj-tech-add-btn" style="padding:6px 14px;font-size:12.5px;"><i class="fas fa-plus"></i> Add</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Media: Multiple Images -->
+        <div class="field-group">
+          <label class="field-label">Project Images Gallery (${activeImages.length} uploaded)</label>
+          <div class="media-manager-card">
+            <div class="media-upload-dropzone" id="proj-img-dropzone">
+              <i class="fas fa-images"></i>
+              <div class="media-dropzone-text">Click to upload multiple project images or drag &amp; drop</div>
+              <div class="media-dropzone-sub">PNG, JPG, WebP supported • Automatically compressed to high-quality WebP</div>
+              <input type="file" id="proj-img-file-input" multiple accept="image/*" style="display:none;">
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <input type="text" class="field-input" id="proj-img-url-input" placeholder="Or paste direct image URL (https://...)" style="font-size:12.5px;">
+              <button type="button" class="btn-admin" id="proj-img-url-add-btn" style="padding:6px 12px;font-size:12.5px;white-space:nowrap;"><i class="fas fa-link"></i> Add URL</button>
+            </div>
+
+            <div class="project-images-grid" id="proj-images-grid">
+              ${activeImages.map((img, imgIdx) => {
+        const url = typeof img === 'string' ? img : (img.url || img.src);
+        return `
+                  <div class="project-image-item" data-img-idx="${imgIdx}">
+                    <span class="project-image-badge">#${imgIdx + 1}</span>
+                    <img src="${esc(url)}" alt="Preview" class="project-image-thumb">
+                    <div class="project-image-actions">
+                      <button type="button" class="img-action-btn move-left-btn" title="Move Left / Earlier" data-action="img-left" data-idx="${imgIdx}" ${imgIdx === 0 ? 'disabled' : ''}>
+                        <i class="fas fa-arrow-left"></i>
+                      </button>
+                      <button type="button" class="img-action-btn move-right-btn" title="Move Right / Later" data-action="img-right" data-idx="${imgIdx}" ${imgIdx === activeImages.length - 1 ? 'disabled' : ''}>
+                        <i class="fas fa-arrow-right"></i>
+                      </button>
+                      <button type="button" class="img-action-btn replace-img-btn" title="Replace Image" data-action="img-replace" data-idx="${imgIdx}">
+                        <i class="fas fa-exchange-alt"></i>
+                      </button>
+                      <button type="button" class="img-action-btn del-btn" title="Delete Image" data-action="img-del" data-idx="${imgIdx}">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
+                  </div>
+                `;
+      }).join('')}
+            </div>
+            <input type="file" id="proj-img-replace-input" accept="image/*" style="display:none;">
+          </div>
+        </div>
+
+        <!-- Project Media: One Video (.mp4 only, optional) -->
+        <div class="field-group">
+          <label class="field-label">Project Video (Optional • .mp4 only • Plays after all images in carousel)</label>
+          <div class="media-manager-card">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <input type="file" id="proj-video-file-input" accept="video/mp4" class="field-input" style="padding:6px 12px;font-size:12.5px;flex:1;min-width:200px;">
+              <span style="font-size:12px;color:var(--text-muted);">or</span>
+              <input type="text" class="field-input" id="proj-video-url-input" value="${esc(activeVideo)}" placeholder="Paste direct .mp4 video URL (https://.../demo.mp4)" style="flex:2;min-width:220px;font-size:12.5px;">
+            </div>
+
+            ${activeVideo ? `
+              <div class="video-preview-wrapper" id="proj-video-preview-wrap">
+                <video src="${esc(activeVideo)}" controls class="video-preview-player"></video>
+                <div class="video-meta-bar">
+                  <span class="video-meta-tag"><i class="fas fa-video"></i> MP4 Video Attached (Final Carousel Slide)</span>
+                  <button type="button" class="btn-admin btn-danger" id="proj-video-remove-btn" style="padding:4px 10px;font-size:11.5px;"><i class="fas fa-trash-alt"></i> Remove Video</button>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <!-- Project Links (Optional) -->
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label">Live Deployment URL (Optional)</label>
+            <input type="text" class="field-input" id="proj-demo-url" value="${esc(item.demoUrl || '')}" placeholder="https://my-app.vercel.app">
+          </div>
+          <div class="field-group">
+            <label class="field-label">GitHub Repository URL (Optional)</label>
+            <input type="text" class="field-input" id="proj-github-url" value="${esc(item.githubUrl || '')}" placeholder="https://github.com/iakashverma/project">
+          </div>
+        </div>
+      `;
+
+      showEditModal(isNew ? 'Add New Project' : 'Edit Project', renderProjectEditorHTML(), () => {
+        // Save project handler
+        const titleVal = document.getElementById('proj-title').value.trim();
+        const descVal = document.getElementById('proj-desc').value.trim();
+
+        if (!titleVal) {
+          showToast('Project title is required.', 'danger');
+          return;
+        }
+
+        // Collect custom domain if applicable
+        const customDomainEl = document.getElementById('proj-custom-domain-input');
+        if (customDomainEl && customDomainEl.value.trim()) {
+          const cust = customDomainEl.value.trim();
+          if (!activeDomains.includes(cust)) activeDomains.push(cust);
+          activeDomains = activeDomains.filter(d => d !== 'Other');
+        }
+
+        item.title = titleVal;
+        item.icon = document.getElementById('proj-icon').value.trim() || 'fas fa-cube';
+        item.description = descVal;
+        activeDomains = [...new Set(activeDomains.map(d => d === 'Web' ? 'Web Development' : d).filter(Boolean))];
+        item.domains = activeDomains.length ? activeDomains : ['Web Development'];
+        item.domain = item.domains[0]; // backward compatibility
+        item.techStack = activeTech;
+        item.images = activeImages;
+        item.video = (document.getElementById('proj-video-url-input')?.value.trim() || activeVideo).trim();
+        item.demoUrl = document.getElementById('proj-demo-url').value.trim();
+        item.githubUrl = document.getElementById('proj-github-url').value.trim();
+
+        saveListAndRerender();
+        closeEditModal();
+        showToast('Project saved & synchronized globally!');
+      }, 'project-edit-modal');
+
+      // Bind dynamic interactive elements in Project Modal
+      const bindProjectModalEvents = () => {
+        // 1. Domain Pills Multi-select
+        document.querySelectorAll('#proj-domain-pills .domain-pill-choice').forEach(pill => {
+          pill.addEventListener('click', () => {
+            const domainName = pill.getAttribute('data-domain');
+            if (activeDomains.includes(domainName)) {
+              activeDomains = activeDomains.filter(d => d !== domainName);
+              pill.classList.remove('selected');
+              pill.querySelector('i').className = 'fas fa-tag';
+            } else {
+              activeDomains.push(domainName);
+              pill.classList.add('selected');
+              pill.querySelector('i').className = 'fas fa-check';
+            }
+
+            const customRow = document.getElementById('proj-custom-domain-row');
+            if (customRow) {
+              customRow.style.display = activeDomains.includes('Other') ? 'flex' : 'none';
+            }
+          });
+        });
+
+        // 2. Tech Stack Chips & Presets
+        const renderTechChips = () => {
+          const chipsEl = document.getElementById('proj-tech-chips');
+          if (chipsEl) {
+            chipsEl.innerHTML = activeTech.length ? activeTech.map((t, tIdx) => `
+              <span class="tech-chip">
+                <span>${esc(t)}</span>
+                <i class="fas fa-times tech-chip-remove" data-tidx="${tIdx}"></i>
+              </span>
+            `).join('') : '<span style="color:var(--text-muted);font-size:12px;">No tech tags added yet. Click presets below or type custom tag.</span>';
+
+            chipsEl.querySelectorAll('.tech-chip-remove').forEach(rmBtn => {
+              rmBtn.addEventListener('click', () => {
+                const tIdx = parseInt(rmBtn.getAttribute('data-tidx'), 10);
+                activeTech.splice(tIdx, 1);
+                renderTechChips();
+              });
+            });
+          }
+        };
+
+        const addTechTag = (val) => {
+          const clean = val.trim();
+          if (clean && !activeTech.includes(clean)) {
+            activeTech.push(clean);
+            renderTechChips();
+          }
+        };
+
+        document.querySelectorAll('.tech-preset-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            addTechTag(btn.getAttribute('data-preset'));
+          });
+        });
+
+        const techInput = document.getElementById('proj-tech-input');
+        const techAddBtn = document.getElementById('proj-tech-add-btn');
+
+        if (techAddBtn && techInput) {
+          techAddBtn.addEventListener('click', () => {
+            addTechTag(techInput.value);
+            techInput.value = '';
+          });
+          techInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+              e.preventDefault();
+              addTechTag(techInput.value);
+              techInput.value = '';
+            }
+          });
+        }
+
+        renderTechChips();
+
+        // 3. Project Images Manager
+        const dropzone = document.getElementById('proj-img-dropzone');
+        const fileInput = document.getElementById('proj-img-file-input');
+        const urlInput = document.getElementById('proj-img-url-input');
+        const urlAddBtn = document.getElementById('proj-img-url-add-btn');
+        const replaceInput = document.getElementById('proj-img-replace-input');
+        let replaceIndex = -1;
+
+        const renderImagesGrid = () => {
+          const gridEl = document.getElementById('proj-images-grid');
+          if (gridEl) {
+            gridEl.innerHTML = activeImages.map((img, imgIdx) => {
+              const url = typeof img === 'string' ? img : (img.url || img.src);
+              return `
+                <div class="project-image-item" data-img-idx="${imgIdx}">
+                  <span class="project-image-badge">#${imgIdx + 1}</span>
+                  <img src="${esc(url)}" alt="Preview" class="project-image-thumb">
+                  <div class="project-image-actions">
+                    <button type="button" class="img-action-btn move-left-btn" title="Move Left" data-action="img-left" data-idx="${imgIdx}" ${imgIdx === 0 ? 'disabled' : ''}>
+                      <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <button type="button" class="img-action-btn move-right-btn" title="Move Right" data-action="img-right" data-idx="${imgIdx}" ${imgIdx === activeImages.length - 1 ? 'disabled' : ''}>
+                      <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button type="button" class="img-action-btn replace-img-btn" title="Replace Image" data-action="img-replace" data-idx="${imgIdx}">
+                      <i class="fas fa-exchange-alt"></i>
+                    </button>
+                    <button type="button" class="img-action-btn del-btn" title="Delete Image" data-action="img-del" data-idx="${imgIdx}">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('');
+
+            // Bind image action buttons
+            gridEl.querySelectorAll('.img-action-btn').forEach(btn => {
+              btn.addEventListener('click', () => {
+                const action = btn.getAttribute('data-action');
+                const idx = parseInt(btn.getAttribute('data-idx'), 10);
+
+                if (action === 'img-left' && idx > 0) {
+                  [activeImages[idx - 1], activeImages[idx]] = [activeImages[idx], activeImages[idx - 1]];
+                  renderImagesGrid();
+                } else if (action === 'img-right' && idx < activeImages.length - 1) {
+                  [activeImages[idx], activeImages[idx + 1]] = [activeImages[idx + 1], activeImages[idx]];
+                  renderImagesGrid();
+                } else if (action === 'img-del') {
+                  activeImages.splice(idx, 1);
+                  renderImagesGrid();
+                } else if (action === 'img-replace') {
+                  replaceIndex = idx;
+                  if (replaceInput) replaceInput.click();
+                }
+              });
+            });
+          }
+        };
+
+        if (dropzone && fileInput) {
+          dropzone.addEventListener('click', () => fileInput.click());
+          dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+          dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+          dropzone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files.length) {
+              await handleMultipleImageUpload(e.dataTransfer.files);
+            }
+          });
+
+          fileInput.addEventListener('change', async (e) => {
+            if (e.target.files && e.target.files.length) {
+              await handleMultipleImageUpload(e.target.files);
+              fileInput.value = '';
+            }
+          });
+        }
+
+        const handleMultipleImageUpload = async (files) => {
+          showToast('Optimizing & preparing images...', 'info');
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (file.type.startsWith('image/')) {
+              try {
+                const webpUrl = await optimizeImageToWebP(file);
+                activeImages.push({ id: genId(), url: webpUrl, caption: file.name.replace(/\.[^/.]+$/, '') });
+              } catch (err) {
+                console.warn('Image optimization error:', err);
+              }
+            }
+          }
+          renderImagesGrid();
+          showToast(`${files.length} image(s) processed.`);
+        };
+
+        if (replaceInput) {
+          replaceInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file && replaceIndex >= 0 && replaceIndex < activeImages.length) {
+              try {
+                showToast('Replacing image...', 'info');
+                const webpUrl = await optimizeImageToWebP(file);
+                activeImages[replaceIndex] = { id: genId(), url: webpUrl, caption: file.name.replace(/\.[^/.]+$/, '') };
+                renderImagesGrid();
+                showToast('Image replaced successfully.');
+              } catch (err) {
+                showToast('Failed to replace image: ' + err.message, 'danger');
+              }
+              replaceInput.value = '';
+              replaceIndex = -1;
+            }
+          });
+        }
+
+        if (urlAddBtn && urlInput) {
+          urlAddBtn.addEventListener('click', () => {
+            const val = urlInput.value.trim();
+            if (val) {
+              activeImages.push({ id: genId(), url: val, caption: 'Project Image' });
+              urlInput.value = '';
+              renderImagesGrid();
+              showToast('Image URL added.');
+            }
+          });
+        }
+
+        // 4. Project Video (.mp4) Manager
+        const videoFileInput = document.getElementById('proj-video-file-input');
+        const videoUrlInput = document.getElementById('proj-video-url-input');
+
+        const updateVideoState = (newUrl) => {
+          activeVideo = newUrl;
+          if (videoUrlInput) videoUrlInput.value = newUrl;
+
+          const existingWrap = document.getElementById('proj-video-preview-wrap');
+          if (existingWrap) existingWrap.remove();
+
+          if (activeVideo) {
+            const parent = videoUrlInput?.closest('.media-manager-card');
+            if (parent) {
+              const previewEl = document.createElement('div');
+              previewEl.className = 'video-preview-wrapper';
+              previewEl.id = 'proj-video-preview-wrap';
+              previewEl.innerHTML = `
+                <video src="${esc(activeVideo)}" controls class="video-preview-player"></video>
+                <div class="video-meta-bar">
+                  <span class="video-meta-tag"><i class="fas fa-video"></i> MP4 Video Attached (Final Carousel Slide)</span>
+                  <button type="button" class="btn-admin btn-danger" id="proj-video-remove-btn" style="padding:4px 10px;font-size:11.5px;"><i class="fas fa-trash-alt"></i> Remove Video</button>
+                </div>
+              `;
+              parent.appendChild(previewEl);
+
+              document.getElementById('proj-video-remove-btn')?.addEventListener('click', () => {
+                updateVideoState('');
+                if (videoFileInput) videoFileInput.value = '';
+                showToast('Video removed.');
+              });
+            }
+          }
+        };
+
+        if (videoFileInput) {
+          videoFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              try {
+                showToast('Loading & validating MP4 video...', 'info');
+                const videoDataUrl = await readVideoAsDataUrl(file);
+                updateVideoState(videoDataUrl);
+                showToast('MP4 video loaded successfully!');
+              } catch (err) {
+                showToast(err.message, 'danger');
+                videoFileInput.value = '';
+              }
+            }
+          });
+        }
+
+        if (videoUrlInput) {
+          videoUrlInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            if (val !== activeVideo) {
+              updateVideoState(val);
+            }
+          });
+        }
+
+        document.getElementById('proj-video-remove-btn')?.addEventListener('click', () => {
+          updateVideoState('');
+          if (videoFileInput) videoFileInput.value = '';
+          showToast('Video removed.');
+        });
+      };
+
+      setTimeout(bindProjectModalEvents, 50);
+    };
+
+    // --- Client-Side PDF to High-Res WebP Image Converter ---
+    const convertPdfToImageWebP = (file, scale = 2.2, quality = 0.88) => {
+      return new Promise((resolve, reject) => {
+        if (!window.pdfjsLib) {
+          return reject(new Error('PDF.js library failed to load. Please check your internet connection or reload the page.'));
+        }
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Failed to read PDF file.'));
+        reader.onload = async function () {
+          try {
+            const typedArray = new Uint8Array(this.result);
+            const loadingTask = window.pdfjsLib.getDocument({ data: typedArray });
+            const pdf = await loadingTask.promise;
+            if (pdf.numPages < 1) {
+              return reject(new Error('The uploaded PDF does not contain any pages.'));
+            }
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({ scale });
+
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+
+            const renderContext = {
+              canvasContext: ctx,
+              viewport: viewport
+            };
+            await page.render(renderContext).promise;
+
+            let dataUrl = canvas.toDataURL('image/webp', quality);
+            if (!dataUrl.startsWith('data:image/webp')) {
+              dataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+            resolve(dataUrl);
+          } catch (err) {
+            reject(new Error('PDF conversion error: ' + err.message));
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    };
+
+    // Dedicated Certificate Editor Modal
+    const openCertificateModal = (items, idx) => {
+      const item = items[idx];
+      const isNew = idx === items.length - 1 && !PortfolioData.isEdited('certifications');
+
+      let activeSourceType = item.sourceType || (item.imageUrl ? 'image' : 'image');
+      let activeImageUrl = item.imageUrl || '';
+      let activeSourceMeta = activeImageUrl ? (activeSourceType === 'pdf' ? 'Rendered from PDF (Page 1)' : (activeSourceType === 'url' ? 'Certificate Image URL' : 'Uploaded Image')) : '';
+
+      const renderCertificateEditorHTML = () => `
+        <div class="field-row">
+          <div class="field-group" style="flex:2;">
+            <label class="field-label">Certificate Name / Title *</label>
+            <input type="text" class="field-input" id="cert-title" value="${esc(item.title || '')}" placeholder="e.g. Machine Learning Specialization">
+          </div>
+          <div class="field-group" style="flex:1;">
+            <label class="field-label">Icon Class</label>
+            <input type="text" class="field-input" id="cert-icon" value="${esc(item.icon || 'fas fa-certificate')}" placeholder="fas fa-certificate">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label">Issuing Organization *</label>
+            <input type="text" class="field-input" id="cert-org" value="${esc(item.org || '')}" placeholder="e.g. Stanford Online, IBM, Meta, Google">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Issue Date</label>
+            <input type="text" class="field-input" id="cert-date" value="${esc(item.issueDate || '')}" placeholder="e.g. 2024 or Oct 2024">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Credential ID (Optional)</label>
+            <input type="text" class="field-input" id="cert-id" value="${esc(item.credentialId || '')}" placeholder="e.g. STANFORD-ML-2024">
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Certificate Description</label>
+          <textarea class="field-textarea" id="cert-desc" rows="3" placeholder="Brief summary of skills, competencies, and topics verified by this certificate...">${esc(item.description || '')}</textarea>
+        </div>
+
+        <!-- Certificate Source Selector -->
+        <div class="field-group">
+          <label class="field-label">Certificate Source Format</label>
+          <div class="cert-source-group" id="cert-source-selector">
+            <div class="cert-source-pill ${activeSourceType === 'image' ? 'selected' : ''}" data-source="image">
+              <i class="fas fa-image"></i>
+              <span>Upload Image</span>
+            </div>
+            <div class="cert-source-pill ${activeSourceType === 'pdf' ? 'selected' : ''}" data-source="pdf">
+              <i class="fas fa-file-pdf"></i>
+              <span>Upload PDF</span>
+            </div>
+            <div class="cert-source-pill ${activeSourceType === 'url' ? 'selected' : ''}" data-source="url">
+              <i class="fas fa-link"></i>
+              <span>Certificate URL</span>
+            </div>
+          </div>
+
+          <!-- Dynamic Source Input Panels -->
+          <div class="media-manager-card">
+            <!-- 1. Image Upload Panel -->
+            <div id="cert-panel-image" style="display:${activeSourceType === 'image' ? 'block' : 'none'};">
+              <div class="media-upload-dropzone" id="cert-img-dropzone">
+                <i class="fas fa-file-image"></i>
+                <div class="media-dropzone-text">Click to upload Certificate Image (JPG, PNG, WebP)</div>
+                <div class="media-dropzone-sub">Automatically optimized to crisp, lightweight WebP format</div>
+                <input type="file" id="cert-img-file-input" accept="image/*" style="display:none;">
+              </div>
+            </div>
+
+            <!-- 2. PDF Upload Panel -->
+            <div id="cert-panel-pdf" style="display:${activeSourceType === 'pdf' ? 'block' : 'none'};">
+              <div class="media-upload-dropzone" id="cert-pdf-dropzone">
+                <i class="fas fa-file-pdf" style="color:#ef4444;"></i>
+                <div class="media-dropzone-text">Click to upload Certificate PDF (.pdf)</div>
+                <div class="media-dropzone-sub">First page will be converted instantly to a high-resolution WebP image</div>
+                <input type="file" id="cert-pdf-file-input" accept=".pdf,application/pdf" style="display:none;">
+              </div>
+            </div>
+
+            <!-- 3. URL Panel -->
+            <div id="cert-panel-url" style="display:${activeSourceType === 'url' ? 'block' : 'none'};">
+              <div style="display:flex;gap:8px;">
+                <input type="text" class="field-input" id="cert-url-input" value="${esc(activeSourceType === 'url' ? activeImageUrl : '')}" placeholder="Paste direct certificate image URL (https://...)" style="font-size:12.5px;">
+                <button type="button" class="btn-admin" id="cert-url-preview-btn" style="padding:6px 14px;font-size:12.5px;white-space:nowrap;"><i class="fas fa-eye"></i> Preview</button>
+              </div>
+            </div>
+
+            <!-- Loading State for PDF rendering -->
+            <div class="cert-convert-loading" id="cert-loading-state" style="display:none;">
+              <i class="fas fa-circle-notch"></i>
+              <span>Converting PDF certificate to high-resolution image...</span>
+            </div>
+
+            <!-- Live Image Preview -->
+            <div id="cert-preview-container">
+              ${activeImageUrl ? `
+                <div class="cert-preview-wrapper" id="cert-preview-wrap">
+                  <img src="${esc(activeImageUrl)}" alt="Certificate Preview" class="cert-preview-img">
+                  <div class="cert-preview-meta">
+                    <span class="cert-preview-tag"><i class="fas fa-check-circle"></i> ${esc(activeSourceMeta || 'Ready for Public Portfolio')}</span>
+                    <button type="button" class="btn-admin btn-danger" id="cert-remove-btn" style="padding:4px 10px;font-size:11.5px;"><i class="fas fa-trash-alt"></i> Remove Image</button>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+
+        <!-- Optional External Credential Link -->
+        <div class="field-group">
+          <label class="field-label">Original Credential / Verification URL (Optional)</label>
+          <input type="text" class="field-input" id="cert-verify-url" value="${esc(item.url || '')}" placeholder="https://coursera.org/verify/...">
+        </div>
+      `;
+
+      showEditModal(isNew ? 'Add New Certificate' : 'Edit Certificate', renderCertificateEditorHTML(), () => {
+        const titleVal = document.getElementById('cert-title').value.trim();
+        if (!titleVal) {
+          showToast('Certificate name is required.', 'danger');
+          return;
+        }
+
+        item.title = titleVal;
+        item.icon = document.getElementById('cert-icon').value.trim() || 'fas fa-certificate';
+        item.org = document.getElementById('cert-org').value.trim();
+        item.issueDate = document.getElementById('cert-date').value.trim();
+        item.credentialId = document.getElementById('cert-id').value.trim();
+        item.description = document.getElementById('cert-desc').value.trim();
+        item.sourceType = activeSourceType;
+        item.imageUrl = activeImageUrl;
+        item.url = document.getElementById('cert-verify-url').value.trim();
+
+        saveListAndRerender();
+        closeEditModal();
+        showToast('Certificate saved & synchronized globally!');
+      }, 'project-edit-modal');
+
+      // Bind dynamic events in certificate modal
+      const bindCertModalEvents = () => {
+        // Source type pills click
+        document.querySelectorAll('#cert-source-selector .cert-source-pill').forEach(pill => {
+          pill.addEventListener('click', () => {
+            activeSourceType = pill.getAttribute('data-source');
+            document.querySelectorAll('#cert-source-selector .cert-source-pill').forEach(p => p.classList.remove('selected'));
+            pill.classList.add('selected');
+
+            document.getElementById('cert-panel-image').style.display = activeSourceType === 'image' ? 'block' : 'none';
+            document.getElementById('cert-panel-pdf').style.display = activeSourceType === 'pdf' ? 'block' : 'none';
+            document.getElementById('cert-panel-url').style.display = activeSourceType === 'url' ? 'block' : 'none';
+          });
+        });
+
+        const updateCertImageState = (newUrl, meta) => {
+          activeImageUrl = newUrl;
+          activeSourceMeta = meta || '';
+
+          const previewContainer = document.getElementById('cert-preview-container');
+          if (previewContainer) {
+            if (activeImageUrl) {
+              previewContainer.innerHTML = `
+                <div class="cert-preview-wrapper" id="cert-preview-wrap">
+                  <img src="${esc(activeImageUrl)}" alt="Certificate Preview" class="cert-preview-img">
+                  <div class="cert-preview-meta">
+                    <span class="cert-preview-tag"><i class="fas fa-check-circle"></i> ${esc(activeSourceMeta || 'Ready for Public Portfolio')}</span>
+                    <button type="button" class="btn-admin btn-danger" id="cert-remove-btn" style="padding:4px 10px;font-size:11.5px;"><i class="fas fa-trash-alt"></i> Remove Image</button>
+                  </div>
+                </div>
+              `;
+              document.getElementById('cert-remove-btn')?.addEventListener('click', () => {
+                updateCertImageState('', '');
+                showToast('Certificate image removed.');
+              });
+            } else {
+              previewContainer.innerHTML = '';
+            }
+          }
+        };
+
+        // Image upload
+        const imgDropzone = document.getElementById('cert-img-dropzone');
+        const imgFileInput = document.getElementById('cert-img-file-input');
+
+        if (imgDropzone && imgFileInput) {
+          imgDropzone.addEventListener('click', () => imgFileInput.click());
+          imgFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              try {
+                showToast('Optimizing certificate image...', 'info');
+                const webpUrl = await optimizeImageToWebP(file, 1400, 1000, 0.88);
+                updateCertImageState(webpUrl, 'Uploaded Image (Optimized WebP)');
+                showToast('Certificate image loaded successfully!');
+              } catch (err) {
+                showToast(err.message, 'danger');
+              }
+              imgFileInput.value = '';
+            }
+          });
+        }
+
+        // PDF upload
+        const pdfDropzone = document.getElementById('cert-pdf-dropzone');
+        const pdfFileInput = document.getElementById('cert-pdf-file-input');
+        const loadingState = document.getElementById('cert-loading-state');
+
+        if (pdfDropzone && pdfFileInput) {
+          pdfDropzone.addEventListener('click', () => pdfFileInput.click());
+          pdfFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              try {
+                if (loadingState) loadingState.style.display = 'flex';
+                showToast('Converting PDF page 1 to high-definition image...', 'info');
+                const webpUrl = await convertPdfToImageWebP(file, 2.2, 0.88);
+                updateCertImageState(webpUrl, 'Rendered from PDF (Page 1) • High-res WebP');
+                showToast('PDF successfully converted to image!');
+              } catch (err) {
+                showToast('PDF conversion error: ' + err.message, 'danger');
+              } finally {
+                if (loadingState) loadingState.style.display = 'none';
+                pdfFileInput.value = '';
+              }
+            }
+          });
+        }
+
+        // URL preview
+        const urlInput = document.getElementById('cert-url-input');
+        const urlBtn = document.getElementById('cert-url-preview-btn');
+
+        if (urlBtn && urlInput) {
+          urlBtn.addEventListener('click', () => {
+            const val = urlInput.value.trim();
+            if (val) {
+              updateCertImageState(val, 'Direct Certificate URL');
+              showToast('Certificate URL loaded.');
+            }
+          });
+        }
+
+        document.getElementById('cert-remove-btn')?.addEventListener('click', () => {
+          updateCertImageState('', '');
+          showToast('Certificate image removed.');
+        });
+      };
+
+      setTimeout(bindCertModalEvents, 50);
+    };
+
+    // Standard edit modal helper for skills, education, certifications
     const openEditModal = (cfg, items, idx) => {
+      if (sectionKey === 'projects') {
+        openProjectModal(items, idx);
+        return;
+      }
+      if (sectionKey === 'certifications') {
+        openCertificateModal(items, idx);
+        return;
+      }
+
       const item = items[idx];
       const fieldsHTML = cfg.fields.map(f => {
         let val = item[f.key];
@@ -1352,32 +2483,244 @@
   // ============================================================
   // HERO VISUAL EDITOR (Typing Animation Snippets)
   // ============================================================
+  // HERO VISUAL EDITOR — Complete Access
+  // ============================================================
   const renderHeroVisual = () => {
-    const data = PortfolioData.get('heroVisual');
+    const raw = PortfolioData.get('heroVisual') || {};
+
+    // Normalize data with robust defaults
+    const header = raw.header || {
+      tab1Icon: 'fas fa-camera',
+      tab2Icon: 'fas fa-brain',
+      tab2Text: 'DEVELOPER',
+      tab3Icon: 'fas fa-code',
+      tab3Text: 'ABOUT_ME.TS',
+      statusDot: true,
+      windowLogoIcon: 'fas fa-circle-dot',
+      windowLogoText: 'AKASH'
+    };
+
+    const aboutMe = raw.aboutMe || {
+      lang: 'ABOUT_ME.TS',
+      question: '"Who is Akash Verma?"',
+      answer: 'Developer working across AI/ML, Data Science, and Web Engineering.',
+      caption: 'Developer Profile Configuration',
+      devName: 'Akash Verma',
+      devFocus: 'AI/ML · Data · Web',
+      devLocation: 'Based in India',
+      devBuilding: 'MOODIX',
+      enabled: true
+    };
+
+    const greeting = raw.greeting || {
+      lang: 'GREETING.JS',
+      question: '"Welcome to my portfolio!"',
+      answer: 'Real-time developer console output & greeting statement.',
+      caption: 'Live Developer Console — Greeting',
+      greetingText: "Hello, I'm Akash Verma 👋",
+      enabled: true
+    };
+
+    const motQuotes = Array.isArray(raw.motivationalQuotes) ? raw.motivationalQuotes : [
+      { text: 'Great things take time. Keep building.', enabled: true },
+      { text: 'Keep learning. Keep building. Keep growing.', enabled: true }
+    ];
+
+    const funQuotes = Array.isArray(raw.funnyQuotes) ? raw.funnyQuotes : [
+      { text: 'It works on my machine.', enabled: true },
+      { text: "I don't have bugs. I have unexpected features.", enabled: true }
+    ];
+
+    const updateLivePreview = () => {
+      const pName = document.getElementById('hv-am-name')?.value || aboutMe.devName || 'Akash Verma';
+      const pFocus = document.getElementById('hv-am-focus')?.value || aboutMe.devFocus || 'AI/ML · Data · Web';
+      const pLoc = document.getElementById('hv-am-loc')?.value || aboutMe.devLocation || 'Based in India';
+      const pBuild = document.getElementById('hv-am-build')?.value || aboutMe.devBuilding || 'MOODIX';
+      const pQ = document.getElementById('hv-am-q')?.value || aboutMe.question || '"Who is Akash Verma?"';
+      const pA = document.getElementById('hv-am-a')?.value || aboutMe.answer || 'Developer working across AI/ML, Data Science, and Web Engineering.';
+      const pLogo = document.getElementById('hv-hdr-logo-text')?.value || header.windowLogoText || 'AKASH';
+      const pTab3 = document.getElementById('hv-hdr-tab3-text')?.value || header.tab3Text || 'ABOUT_ME.TS';
+
+      const previewBox = document.getElementById('hv-live-preview-box');
+      if (previewBox) {
+        previewBox.innerHTML = `
+          <div class="hv-preview-window">
+            <div class="hv-preview-header">
+              <span><i class="fas fa-circle-dot" style="color:#10b981;margin-right:6px;"></i> ${esc(pLogo)}</span>
+              <span>${esc(pTab3)}</span>
+            </div>
+            <div class="hv-preview-body">
+              <div class="hv-preview-q">${esc(pQ)}</div>
+              <div class="hv-preview-a">${esc(pA)}</div>
+              <div class="hv-code-box"><span class="syn-kw">const</span> developer <span class="syn-op">=</span> {
+  name: <span class="syn-str">"${esc(pName)}"</span>,
+  focus: <span class="syn-str">"${esc(pFocus)}"</span>,
+  location: <span class="syn-str">"${esc(pLoc)}"</span>,
+  building: <span class="syn-str">"${esc(pBuild)}"</span>
+};</div>
+            </div>
+          </div>
+        `;
+      }
+    };
 
     mainEl.innerHTML = `
       <div class="admin-main-header">
         <div>
-          <h1 class="admin-page-title">Hero Visual</h1>
-          <p class="admin-page-subtitle">Manage typing animation snippets.</p>
+          <h1 class="admin-page-title">Hero Visual Section</h1>
+          <p class="admin-page-subtitle">Complete control over window headers, tabs, profile card, greetings, and quote loops.</p>
         </div>
         ${editedBadge('heroVisual')}
       </div>
 
+      <!-- 1. Window & Tab Bar Header Settings -->
       <div class="editor-card">
-        <div class="editor-card-header"><span class="editor-card-title">Greeting Snippet</span></div>
+        <div class="editor-card-header"><span class="editor-card-title"><i class="fas fa-window-maximize" style="color:var(--accent);margin-right:8px;"></i> Window Header &amp; Tab Bar</span></div>
         <div class="editor-card-body">
-          <div class="field-group"><label class="field-label">Question</label><input type="text" class="field-input" id="hv-greet-q" value="${esc(data.greeting.question)}"></div>
-          <div class="field-group"><label class="field-label">Answer</label><input type="text" class="field-input" id="hv-greet-a" value="${esc(data.greeting.answer)}"></div>
-          <div class="field-group"><label class="field-label">Caption</label><input type="text" class="field-input" id="hv-greet-cap" value="${esc(data.greeting.caption)}"></div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label">Window Brand Logo</label>
+              <input type="text" class="field-input" id="hv-hdr-logo-text" value="${esc(header.windowLogoText || 'AKASH')}" placeholder="AKASH">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Window Logo Icon Class</label>
+              <input type="text" class="field-input" id="hv-hdr-logo-icon" value="${esc(header.windowLogoIcon || 'fas fa-circle-dot')}" placeholder="fas fa-circle-dot">
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label">Tab 2 Label</label>
+              <input type="text" class="field-input" id="hv-hdr-tab2-text" value="${esc(header.tab2Text || 'DEVELOPER')}" placeholder="DEVELOPER">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Tab 2 Icon Class</label>
+              <input type="text" class="field-input" id="hv-hdr-tab2-icon" value="${esc(header.tab2Icon || 'fas fa-brain')}" placeholder="fas fa-brain">
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label">Tab 3 Label / File Tag</label>
+              <input type="text" class="field-input" id="hv-hdr-tab3-text" value="${esc(header.tab3Text || 'ABOUT_ME.TS')}" placeholder="ABOUT_ME.TS">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Tab 3 Icon Class</label>
+              <input type="text" class="field-input" id="hv-hdr-tab3-icon" value="${esc(header.tab3Icon || 'fas fa-code')}" placeholder="fas fa-code">
+            </div>
+          </div>
+
+          <div class="field-row" style="margin-top:4px;">
+            <div class="field-group" style="display:flex;align-items:center;gap:12px;">
+              ${toggleHTML(header.statusDot !== false, 'hv-hdr-status-dot')}
+              <label class="field-label" style="margin:0;cursor:pointer;" for="hv-hdr-status-dot">Show Active Status Green Dot in Tab Bar</label>
+            </div>
+          </div>
         </div>
       </div>
 
+      <!-- 2. Developer Profile Card (Primary Snippet) -->
       <div class="editor-card">
-        <div class="editor-card-header"><span class="editor-card-title">Motivational Quotes</span></div>
+        <div class="editor-card-header" style="justify-content:space-between;">
+          <span class="editor-card-title"><i class="fas fa-id-card" style="color:#10b981;margin-right:8px;"></i> Developer Profile Configuration (Primary Card)</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:12px;color:var(--text-muted);">Enabled</span>
+            ${toggleHTML(aboutMe.enabled !== false, 'hv-am-enabled')}
+          </div>
+        </div>
+        <div class="editor-card-body">
+          <div class="field-row">
+            <div class="field-group" style="flex:2;">
+              <label class="field-label">Header Question</label>
+              <input type="text" class="field-input" id="hv-am-q" value="${esc(aboutMe.question || '"Who is Akash Verma?"')}">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Tab File Label</label>
+              <input type="text" class="field-input" id="hv-am-lang" value="${esc(aboutMe.lang || 'ABOUT_ME.TS')}">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Subtitle / Summary Tagline</label>
+            <input type="text" class="field-input" id="hv-am-a" value="${esc(aboutMe.answer || 'Developer working across AI/ML, Data Science, and Web Engineering.')}">
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label">Developer Name (<code>name</code>)</label>
+              <input type="text" class="field-input" id="hv-am-name" value="${esc(aboutMe.devName || 'Akash Verma')}">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Focus Areas (<code>focus</code>)</label>
+              <input type="text" class="field-input" id="hv-am-focus" value="${esc(aboutMe.devFocus || 'AI/ML · Data · Web')}">
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label">Location (<code>location</code>)</label>
+              <input type="text" class="field-input" id="hv-am-loc" value="${esc(aboutMe.devLocation || 'Based in India')}">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Current Building (<code>building</code>)</label>
+              <input type="text" class="field-input" id="hv-am-build" value="${esc(aboutMe.devBuilding || 'MOODIX')}">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Bottom Footer Caption</label>
+            <input type="text" class="field-input" id="hv-am-cap" value="${esc(aboutMe.caption || 'Developer Profile Configuration')}">
+          </div>
+
+          <label class="field-label" style="margin-top:10px;">Live Code Output Preview</label>
+          <div id="hv-live-preview-box"></div>
+        </div>
+      </div>
+
+      <!-- 3. Greeting Console Snippet -->
+      <div class="editor-card">
+        <div class="editor-card-header" style="justify-content:space-between;">
+          <span class="editor-card-title"><i class="fas fa-terminal" style="color:#60a5fa;margin-right:8px;"></i> Console Greeting Snippet</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:12px;color:var(--text-muted);">Enabled</span>
+            ${toggleHTML(greeting.enabled !== false, 'hv-greet-enabled')}
+          </div>
+        </div>
+        <div class="editor-card-body">
+          <div class="field-row">
+            <div class="field-group" style="flex:2;">
+              <label class="field-label">Console Question</label>
+              <input type="text" class="field-input" id="hv-greet-q" value="${esc(greeting.question || '"Welcome to my portfolio!"')}">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Tab File Label</label>
+              <input type="text" class="field-input" id="hv-greet-lang" value="${esc(greeting.lang || 'GREETING.JS')}">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Console Output Answer</label>
+            <input type="text" class="field-input" id="hv-greet-a" value="${esc(greeting.answer || 'Real-time developer console output & greeting statement.')}">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Greeting Message (<code>console.log(...)</code>)</label>
+            <input type="text" class="field-input" id="hv-greet-msg" value="${esc(greeting.greetingText || "Hello, I'm Akash Verma 👋")}">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Console Caption</label>
+            <input type="text" class="field-input" id="hv-greet-cap" value="${esc(greeting.caption || 'Live Developer Console — Greeting')}">
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Motivational Quotes -->
+      <div class="editor-card">
+        <div class="editor-card-header"><span class="editor-card-title"><i class="fas fa-quote-left" style="color:#f59e0b;margin-right:8px;"></i> Motivational Quotes</span></div>
         <div class="editor-card-body">
           <div class="editor-list" id="hv-mq-list">
-            ${data.motivationalQuotes.map((q, i) => `
+            ${motQuotes.map((q, i) => `
               <div class="editor-list-item">
                 <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">${toggleHTML(q.enabled !== false, `mqt-${i}`)}</div>
                 <div class="editor-list-item-content">
@@ -1389,15 +2732,16 @@
               </div>
             `).join('')}
           </div>
-          <button class="btn-admin btn-add" id="hv-add-mq" style="margin-top:10px;"><i class="fas fa-plus"></i> Add Quote</button>
+          <button class="btn-admin btn-add" id="hv-add-mq" style="margin-top:10px;"><i class="fas fa-plus"></i> Add Motivational Quote</button>
         </div>
       </div>
 
+      <!-- 5. Funny Developer Quotes -->
       <div class="editor-card">
-        <div class="editor-card-header"><span class="editor-card-title">Funny Developer Quotes</span></div>
+        <div class="editor-card-header"><span class="editor-card-title"><i class="fas fa-face-laugh-beam" style="color:#ec4899;margin-right:8px;"></i> Funny Developer Quotes</span></div>
         <div class="editor-card-body">
           <div class="editor-list" id="hv-fq-list">
-            ${data.funnyQuotes.map((q, i) => `
+            ${funQuotes.map((q, i) => `
               <div class="editor-list-item">
                 <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">${toggleHTML(q.enabled !== false, `fqt-${i}`)}</div>
                 <div class="editor-list-item-content">
@@ -1409,46 +2753,98 @@
               </div>
             `).join('')}
           </div>
-          <button class="btn-admin btn-add" id="hv-add-fq" style="margin-top:10px;"><i class="fas fa-plus"></i> Add Quote</button>
+          <button class="btn-admin btn-add" id="hv-add-fq" style="margin-top:10px;"><i class="fas fa-plus"></i> Add Funny Quote</button>
         </div>
       </div>
 
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
+      <!-- Action Buttons -->
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
         <button class="btn-admin btn-cancel" id="hv-reset">Reset to Default</button>
-        <button class="btn-admin btn-save" id="hv-save"><i class="fas fa-check"></i> Save Changes</button>
+        <button class="btn-admin btn-save" id="hv-save"><i class="fas fa-check"></i> Save &amp; Publish Hero Visual</button>
       </div>
     `;
 
-    // Toggles
-    data.motivationalQuotes.forEach((_, i) => { document.getElementById(`mqt-${i}`)?.addEventListener('change', (e) => { data.motivationalQuotes[i].enabled = e.target.checked; }); });
-    data.funnyQuotes.forEach((_, i) => { document.getElementById(`fqt-${i}`)?.addEventListener('change', (e) => { data.funnyQuotes[i].enabled = e.target.checked; }); });
+    // Render initial live preview
+    updateLivePreview();
 
-    // Deletes
+    // Live preview input listeners
+    ['hv-am-name', 'hv-am-focus', 'hv-am-loc', 'hv-am-build', 'hv-am-q', 'hv-am-a', 'hv-hdr-logo-text', 'hv-hdr-tab3-text'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', updateLivePreview);
+    });
+
+    // Quote toggles
+    motQuotes.forEach((_, i) => {
+      document.getElementById(`mqt-${i}`)?.addEventListener('change', (e) => { motQuotes[i].enabled = e.target.checked; });
+    });
+    funQuotes.forEach((_, i) => {
+      document.getElementById(`fqt-${i}`)?.addEventListener('change', (e) => { funQuotes[i].enabled = e.target.checked; });
+    });
+
+    // Quote deletes
     document.querySelectorAll('[data-action="del-mq"]').forEach(btn => {
-      btn.addEventListener('click', () => { data.motivationalQuotes.splice(parseInt(btn.dataset.i), 1); saveHV(); });
+      btn.addEventListener('click', () => { motQuotes.splice(parseInt(btn.dataset.i), 1); saveHV(); });
     });
     document.querySelectorAll('[data-action="del-fq"]').forEach(btn => {
-      btn.addEventListener('click', () => { data.funnyQuotes.splice(parseInt(btn.dataset.i), 1); saveHV(); });
+      btn.addEventListener('click', () => { funQuotes.splice(parseInt(btn.dataset.i), 1); saveHV(); });
     });
 
-    document.getElementById('hv-add-mq').addEventListener('click', () => { data.motivationalQuotes.push({ text: 'New motivational quote.', enabled: true }); saveHV(); });
-    document.getElementById('hv-add-fq').addEventListener('click', () => { data.funnyQuotes.push({ text: 'New funny quote.', enabled: true }); saveHV(); });
+    // Quote adds
+    document.getElementById('hv-add-mq').addEventListener('click', () => {
+      motQuotes.push({ text: 'Great things take time. Keep building.', enabled: true });
+      saveHV();
+    });
+    document.getElementById('hv-add-fq').addEventListener('click', () => {
+      funQuotes.push({ text: "I don't have bugs. I have unexpected features.", enabled: true });
+      saveHV();
+    });
 
     const saveHV = async () => {
-      // Read current text values
-      document.querySelectorAll('.mq-text').forEach((el, i) => { if (data.motivationalQuotes[i]) data.motivationalQuotes[i].text = el.value.trim(); });
-      document.querySelectorAll('.fq-text').forEach((el, i) => { if (data.funnyQuotes[i]) data.funnyQuotes[i].text = el.value.trim(); });
-      data.greeting.question = document.getElementById('hv-greet-q')?.value.trim() || data.greeting.question;
-      data.greeting.answer = document.getElementById('hv-greet-a')?.value.trim() || data.greeting.answer;
-      data.greeting.caption = document.getElementById('hv-greet-cap')?.value.trim() || data.greeting.caption;
-      const res = await PortfolioData.setAsync('heroVisual', data);
-      handleSaveResult(res, 'Hero Visual saved & synchronized globally!');
+      // Gather latest quote texts
+      document.querySelectorAll('.mq-text').forEach((el, i) => { if (motQuotes[i]) motQuotes[i].text = el.value.trim(); });
+      document.querySelectorAll('.fq-text').forEach((el, i) => { if (funQuotes[i]) funQuotes[i].text = el.value.trim(); });
+
+      const updatedPayload = {
+        header: {
+          tab1Icon: document.getElementById('hv-hdr-tab1-icon')?.value.trim() || 'fas fa-camera',
+          tab2Icon: document.getElementById('hv-hdr-tab2-icon')?.value.trim() || 'fas fa-brain',
+          tab2Text: document.getElementById('hv-hdr-tab2-text')?.value.trim() || 'DEVELOPER',
+          tab3Icon: document.getElementById('hv-hdr-tab3-icon')?.value.trim() || 'fas fa-code',
+          tab3Text: document.getElementById('hv-hdr-tab3-text')?.value.trim() || 'ABOUT_ME.TS',
+          statusDot: document.getElementById('hv-hdr-status-dot')?.checked !== false,
+          windowLogoIcon: document.getElementById('hv-hdr-logo-icon')?.value.trim() || 'fas fa-circle-dot',
+          windowLogoText: document.getElementById('hv-hdr-logo-text')?.value.trim() || 'AKASH'
+        },
+        aboutMe: {
+          lang: document.getElementById('hv-am-lang')?.value.trim() || 'ABOUT_ME.TS',
+          question: document.getElementById('hv-am-q')?.value.trim() || '"Who is Akash Verma?"',
+          answer: document.getElementById('hv-am-a')?.value.trim() || 'Developer working across AI/ML, Data Science, and Web Engineering.',
+          caption: document.getElementById('hv-am-cap')?.value.trim() || 'Developer Profile Configuration',
+          devName: document.getElementById('hv-am-name')?.value.trim() || 'Akash Verma',
+          devFocus: document.getElementById('hv-am-focus')?.value.trim() || 'AI/ML · Data · Web',
+          devLocation: document.getElementById('hv-am-loc')?.value.trim() || 'Based in India',
+          devBuilding: document.getElementById('hv-am-build')?.value.trim() || 'MOODIX',
+          enabled: document.getElementById('hv-am-enabled')?.checked !== false
+        },
+        greeting: {
+          lang: document.getElementById('hv-greet-lang')?.value.trim() || 'GREETING.JS',
+          question: document.getElementById('hv-greet-q')?.value.trim() || '"Welcome to my portfolio!"',
+          answer: document.getElementById('hv-greet-a')?.value.trim() || 'Real-time developer console output & greeting statement.',
+          caption: document.getElementById('hv-greet-cap')?.value.trim() || 'Live Developer Console — Greeting',
+          greetingText: document.getElementById('hv-greet-msg')?.value.trim() || "Hello, I'm Akash Verma 👋",
+          enabled: document.getElementById('hv-greet-enabled')?.checked !== false
+        },
+        motivationalQuotes: motQuotes,
+        funnyQuotes: funQuotes
+      };
+
+      const res = await PortfolioData.setAsync('heroVisual', updatedPayload);
+      handleSaveResult(res, 'Hero Visual updated & synchronized globally!');
       renderHeroVisual();
     };
 
     document.getElementById('hv-save').addEventListener('click', () => { saveHV(); });
     document.getElementById('hv-reset').addEventListener('click', () => {
-      showConfirm('Reset Hero Visual?', 'All custom snippets will be lost.', async () => {
+      showConfirm('Reset Hero Visual?', 'All custom visual cards and snippets will be reset to default.', async () => {
         const res = await PortfolioData.resetAsync('heroVisual');
         handleResetResult(res, 'Hero Visual reset to default!');
         renderHeroVisual();
