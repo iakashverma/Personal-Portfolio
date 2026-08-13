@@ -72,10 +72,9 @@ async function saveToKV(key, data) {
   const res = await fetch(`${KV_URL.replace(/\/$/, '')}/set/${key}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${KV_TOKEN}`,
-      'Content-Type': 'application/json'
+      'Authorization': `Bearer ${KV_TOKEN}`
     },
-    body: JSON.stringify(payloadString)
+    body: payloadString
   });
 
   if (!res.ok) {

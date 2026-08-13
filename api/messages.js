@@ -46,10 +46,9 @@ const saveToKV = async (key = 'portfolio_contact_messages', msgs) => {
       const res = await fetch(`${kvUrl.replace(/\/$/, '')}/set/${key}`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${kvToken}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${kvToken}`
         },
-        body: JSON.stringify(payloadString)
+        body: payloadString
       });
       return res.ok;
     } catch (err) {
