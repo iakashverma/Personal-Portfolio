@@ -39,10 +39,18 @@ module.exports = async (req, res) => {
     }
 
     // Server-side credential validation
-    const VALID_EMAIL = process.env.ADMIN_EMAIL || 'admin@akku.com';
-    const VALID_PASS_HASH = process.env.ADMIN_PASS_HASH || '50cf58d2a2363ed8b4b6a27075e5667816a36811f6f2e1be012b396c15567746';
+    const crypto = require('crypto');
+    const VALID_EMAIL = (process.env.ADMIN_EMAIL || 'admin@akku.com').trim().toLowerCase();
+    
+    let expectedHash = (process.env.ADMIN_PASS_HASH || '').trim().toLowerCase();
+    if (!expectedHash && process.env.ADMIN_PASSWORD) {
+      expectedHash = crypto.createHash('sha256').update(process.env.ADMIN_PASSWORD.trim()).digest('hex');
+    }
+    if (!expectedHash) {
+      expectedHash = '50cf58d2a2363ed8b4b6a27075e5667816a36811f6f2e1be012b396c15567746';
+    }
 
-    if (email !== VALID_EMAIL || passwordHash !== VALID_PASS_HASH) {
+    if (email !== VALID_EMAIL || passwordHash.toLowerCase() !== expectedHash) {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
