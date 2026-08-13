@@ -4,8 +4,8 @@
   "private": true,
   "description": "Portfolio website of Akash Verma — Developer working across AI/ML, Data Science, and Web Engineering.",
   "scripts": {
-    "dev": "npx -y serve .",
-    "start": "npx -y serve .",
+    "dev": "node server.js",
+    "start": "node server.js",
     "build": "echo 'Static production files ready.'"
   },
   "keywords": [

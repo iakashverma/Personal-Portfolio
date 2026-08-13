@@ -19,6 +19,19 @@
   let confirmCallback = null;
   let editModalCallback = null;
 
+  // Load admin API token from sessionStorage (set during login via /api/auth)
+  const adminApiToken = sessionStorage.getItem('admin_api_token') || '';
+  if (adminApiToken && typeof PortfolioData !== 'undefined') {
+    PortfolioData.setAdminSecret(adminApiToken);
+  }
+
+  // Helper to build admin auth headers
+  const adminHeaders = () => {
+    const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+    if (adminApiToken) h['x-admin-secret'] = adminApiToken;
+    return h;
+  };
+
   // ============================================================
   // TOAST
   // ============================================================
@@ -110,6 +123,7 @@
   document.getElementById('logout-btn').addEventListener('click', () => {
     sessionStorage.removeItem('admin_session');
     sessionStorage.removeItem('admin_email');
+    sessionStorage.removeItem('admin_api_token');
     window.location.href = 'admin.html';
   });
 
@@ -173,30 +187,47 @@
 
   const fetchMessagesFromBackend = async () => {
     try {
-      const res = await fetch('/api/messages?t=' + Date.now(), { cache: 'no-store' });
+      const res = await fetch('/api/messages?t=' + Date.now(), {
+        headers: adminHeaders(),
+        cache: 'no-store'
+      });
       if (res.ok) {
-        const json = await res.json();
-        if (json && json.success && Array.isArray(json.messages)) {
-          cachedMessages = json.messages;
-          try { localStorage.setItem('portfolio_contact_messages', JSON.stringify(cachedMessages)); } catch (e) {}
-          updateSidebarBadges();
-          return cachedMessages;
+        const text = await res.text();
+        if (text && text.trim()) {
+          const json = JSON.parse(text);
+          if (json && json.success && Array.isArray(json.messages)) {
+            cachedMessages = json.messages;
+            try { localStorage.setItem('portfolio_contact_messages', JSON.stringify(cachedMessages)); } catch (e) {}
+            updateSidebarBadges();
+            return cachedMessages;
+          }
         }
       }
     } catch (e) {}
     return getMessages();
   };
 
-  const saveMessages = (msgs) => {
+  const saveMessages = async (msgs) => {
     cachedMessages = msgs;
     try {
       localStorage.setItem('portfolio_contact_messages', JSON.stringify(msgs));
     } catch (e) {}
-    fetch('/api/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'save_all', messages: msgs })
-    }).catch(e => console.warn('Failed to sync messages to backend:', e));
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({ action: 'save_all', messages: msgs })
+      });
+      if (res.ok) {
+        const text = await res.text();
+        if (text && text.trim()) {
+          const json = JSON.parse(text);
+          if (json && json.success) return true;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to sync messages to backend:', e);
+    }
     return true;
   };
 
@@ -243,6 +274,9 @@
   const renderDashboard = () => {
     const data = PortfolioData.getAll();
     const messages = getMessages();
+    const isConnected = PortfolioData.getDbConnectedStatus();
+    const activeProvider = PortfolioData.getActiveProvider ? PortfolioData.getActiveProvider() : 'Local Storage';
+
     const stats = [
       { icon: 'fas fa-folder-open', value: data.projects.items.length, label: 'Projects' },
       { icon: 'fas fa-cubes', value: data.skills.categories.length, label: 'Skill Categories' },
@@ -257,9 +291,52 @@
       <div class="admin-main-header">
         <div>
           <h1 class="admin-page-title">Dashboard</h1>
-          <p class="admin-page-subtitle">Overview of your portfolio content.</p>
+          <p class="admin-page-subtitle">Central control center for your portfolio content and global multi-device synchronization.</p>
         </div>
       </div>
+
+      <!-- Cloud Sync & Central Persistence Status Card -->
+      <div class="editor-card" style="border-left: 4px solid ${isConnected !== false ? 'var(--status-green)' : 'var(--status-amber)'};">
+        <div class="editor-card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <i class="fas fa-cloud" style="color:${isConnected !== false ? 'var(--status-green)' : 'var(--status-amber)'};font-size:18px;"></i>
+            <span class="editor-card-title">Central Production Database &amp; Global Sync</span>
+          </div>
+          <span class="edited-badge" style="background:${isConnected !== false ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 167, 38, 0.15)'};color:${isConnected !== false ? 'var(--status-green)' : 'var(--status-amber)'};border-color:${isConnected !== false ? 'var(--status-green)' : 'var(--status-amber)'};">
+            <i class="fas fa-${isConnected !== false ? 'check-circle' : 'exclamation-triangle'}"></i>
+            ${isConnected !== false ? 'Global Multi-Device Sync Active' : 'Local Storage / Setup Recommended'}
+          </span>
+        </div>
+        <div class="editor-card-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px;margin-bottom:16px;">
+            <div style="background:rgba(255,255,255,0.02);padding:14px 16px;border-radius:8px;border:1px solid var(--border);">
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Active Storage Provider</div>
+              <div style="font-weight:600;font-size:15px;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+                <span class="status-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${isConnected !== false ? 'var(--status-green)' : 'var(--status-amber)'};"></span>
+                ${esc(activeProvider)}
+              </div>
+            </div>
+            <div style="background:rgba(255,255,255,0.02);padding:14px 16px;border-radius:8px;border:1px solid var(--border);">
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Cross-Device Reach</div>
+              <div style="font-weight:600;font-size:15px;color:var(--text-primary);">
+                ${isConnected !== false ? '100% (Every visitor & browser sees all edits)' : 'Current browser only (Ephemeral serverless)'}
+              </div>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--text-secondary);margin:0 0 16px 0;line-height:1.6;">
+            When you edit portfolio sections or manage messages, changes are persisted to the central production database and automatically delivered to all devices and visitors in real-time.
+          </p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn-admin btn-cancel" id="btn-test-db-sync">
+              <i class="fas fa-sync-alt"></i> Test Central Cloud Sync
+            </button>
+            <button class="btn-admin btn-cancel" id="btn-db-setup-guide">
+              <i class="fas fa-database"></i> Database Setup Guide (Vercel)
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="overview-grid">
         ${stats.map(s => `
           <div class="overview-card">
@@ -308,6 +385,60 @@
         </div>
       </div>
     `;
+
+    // Bind Central DB Sync Test & Guide
+    document.getElementById('btn-test-db-sync')?.addEventListener('click', async () => {
+      const testBtn = document.getElementById('btn-test-db-sync');
+      if (testBtn) {
+        testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing Central Cloud Sync...';
+        testBtn.disabled = true;
+      }
+      const t0 = performance.now();
+      const res = await PortfolioData.fetchFromBackend();
+      const roundTripMs = Math.round(performance.now() - t0);
+      if (testBtn) {
+        testBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Test Central Cloud Sync';
+        testBtn.disabled = false;
+      }
+
+      if (res && res.success) {
+        showToast(`✓ Central Database connected (${res.activeProvider || activeProvider}) — Ping: ${roundTripMs}ms. Global sync verified!`, 'success');
+      } else {
+        showToast(`⚠️ Sync test note: Operating in local/in-memory mode (${roundTripMs}ms). For hosted Vercel deployments, link Upstash KV, Supabase, or GitHub Token.`, 'warning');
+      }
+      renderDashboard();
+    });
+
+    document.getElementById('btn-db-setup-guide')?.addEventListener('click', () => {
+      showEditModal('Central Cloud Database Setup Guide', `
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">
+          <p style="margin-top:0;">To persist admin changes centrally so they reflect on <strong>every device and browser worldwide</strong>, configure any <strong>one</strong> of the supported cloud options in your Vercel Project Settings (Settings &rarr; Environment Variables):</p>
+          
+          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
+            <strong style="color:var(--text-primary);display:block;margin-bottom:6px;"><i class="fas fa-bolt" style="color:var(--status-green);margin-right:6px;"></i>Option A: Vercel KV / Upstash Redis (Recommended &amp; 1-Click)</strong>
+            <p style="margin:0 0 6px 0;">Under Vercel dashboard &rarr; Storage &rarr; Create KV Database. It automatically injects:</p>
+            <code style="font-family:var(--font-mono);font-size:12px;color:var(--status-green);">KV_REST_API_URL</code><br>
+            <code style="font-family:var(--font-mono);font-size:12px;color:var(--status-green);">KV_REST_API_TOKEN</code>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
+            <strong style="color:var(--text-primary);display:block;margin-bottom:6px;"><i class="fab fa-github" style="color:#fff;margin-right:6px;"></i>Option B: GitHub Gist Sync (Zero Extra Database)</strong>
+            <p style="margin:0 0 6px 0;">Create a secret Gist on GitHub with <code>portfolio_data.json</code>, then add to Vercel env:</p>
+            <code style="font-family:var(--font-mono);font-size:12px;color:var(--status-green);">GITHUB_GIST_ID = [your_gist_id]</code><br>
+            <code style="font-family:var(--font-mono);font-size:12px;color:var(--status-green);">GITHUB_TOKEN = [your_personal_access_token]</code>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
+            <strong style="color:var(--text-primary);display:block;margin-bottom:6px;"><i class="fas fa-database" style="color:#3ecf8e;margin-right:6px;"></i>Option C: Supabase</strong>
+            <p style="margin:0 0 6px 0;">Add your Supabase project credentials to Vercel:</p>
+            <code style="font-family:var(--font-mono);font-size:12px;color:var(--status-green);">SUPABASE_URL = https://your-app.supabase.co</code><br>
+            <code style="font-family:var(--font-mono);font-size:12px;color:var(--status-green);">SUPABASE_SERVICE_ROLE_KEY = [your_service_key]</code>
+          </div>
+        </div>
+      `, () => {
+        closeEditModal();
+      });
+    });
 
     // Bind Message actions in dashboard
     document.querySelectorAll('.view-msg-btn').forEach(btn => {

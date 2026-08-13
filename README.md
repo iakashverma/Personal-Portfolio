@@ -213,7 +213,22 @@ Then open the project through a local development server.
 
 For example, using VS Code Live Server or another local HTTP server.
 
-If the project contains a backend/database for the Admin Portal, configure that backend according to its own environment requirements before using Admin functionality.
+## 🌐 Central Cloud Persistence & Multi-Device Synchronization
+
+To ensure that edits made in the Admin Portal persist to a central production data store and are reflected consistently across **every device and browser worldwide**, the backend supports multiple cloud database adapters with automatic failover:
+
+| Provider | Supported Environment Variables | Description |
+| :--- | :--- | :--- |
+| **Vercel KV / Upstash Redis** *(Recommended)* | `KV_REST_API_URL`<br>`KV_REST_API_TOKEN` | 1-Click setup via Vercel Dashboard &rarr; Storage &rarr; Create KV Database. |
+| **GitHub Gist Sync** *(Zero extra DB)* | `GITHUB_GIST_ID`<br>`GITHUB_TOKEN` | Automatically reads and writes `portfolio_data.json` directly to a GitHub Gist. |
+| **Supabase REST** | `SUPABASE_URL`<br>`SUPABASE_SERVICE_ROLE_KEY` | Connects to a Supabase Postgres key-value table. |
+| **JSONBin.io** | `JSONBIN_BIN_ID`<br>`JSONBIN_API_KEY` | Cloud JSON document store. |
+| **Local Disk** | *(Automatic during local dev)* | Saves to `.data/portfolio_data.json` during `node server.js` testing. |
+
+### How Multi-Device Consistency Works
+1. When you save changes in the Admin Portal, a request is sent to `/api/data`.
+2. The serverless API updates the configured central cloud database (Upstash Redis, Supabase, GitHub Gist, etc.).
+3. When any device or browser loads or updates the portfolio, `PortfolioData.init()` fetches the latest state from `/api/data` with cache-busting headers (`no-store`), ensuring zero stale-cache lag and seamless global reflection.
 
 ## 🔑 Environment & Security
 

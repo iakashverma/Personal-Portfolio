@@ -140,28 +140,53 @@
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span>Authenticating...</span> <i class="fas fa-spinner fa-spin"></i>';
 
-        // Simulate brief auth delay
-        await new Promise(r => setTimeout(r, 600));
-
         const passHash = await sha256(password);
 
-        if (email === VALID_EMAIL && passHash === VALID_PASS_HASH) {
-          failedAttempts = 0;
-          sessionStorage.setItem('admin_session', 'authenticated');
-          sessionStorage.setItem('admin_email', email);
-          window.location.href = 'admin-dashboard.html';
-        } else {
-          failedAttempts++;
-          if (failedAttempts >= 5) {
-            lockoutUntil = Date.now() + 30000;
-            errorEl.textContent = 'Too many failed attempts. Please wait 30 seconds.';
-          } else {
-            errorEl.textContent = 'Invalid email or password. Please try again.';
+        // Server-side authentication — validates credentials and returns admin API token
+        try {
+          const authRes = await fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ email, passwordHash: passHash })
+          });
+
+          if (authRes.ok) {
+            const authData = await authRes.json();
+            if (authData.success) {
+              failedAttempts = 0;
+              sessionStorage.setItem('admin_session', 'authenticated');
+              sessionStorage.setItem('admin_email', email);
+              // Store admin API token for authenticated CRUD operations
+              if (authData.token) {
+                sessionStorage.setItem('admin_api_token', authData.token);
+              }
+              window.location.href = 'admin-dashboard.html';
+              return;
+            }
           }
-          errorEl.className = 'login-error show';
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>Sign In</span> <i class="fas fa-arrow-right"></i>';
+        } catch (networkErr) {
+          // If server auth is unavailable, fall back to client-side validation
+          console.warn('Server auth unavailable, using client-side validation:', networkErr.message);
+          if (email === VALID_EMAIL && passHash === VALID_PASS_HASH) {
+            failedAttempts = 0;
+            sessionStorage.setItem('admin_session', 'authenticated');
+            sessionStorage.setItem('admin_email', email);
+            window.location.href = 'admin-dashboard.html';
+            return;
+          }
         }
+
+        // Authentication failed
+        failedAttempts++;
+        if (failedAttempts >= 5) {
+          lockoutUntil = Date.now() + 30000;
+          errorEl.textContent = 'Too many failed attempts. Please wait 30 seconds.';
+        } else {
+          errorEl.textContent = 'Invalid email or password. Please try again.';
+        }
+        errorEl.className = 'login-error show';
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Sign In</span> <i class="fas fa-arrow-right"></i>';
       });
     })();
   </script>

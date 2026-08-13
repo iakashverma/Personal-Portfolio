@@ -173,9 +173,12 @@ const loadFromKV = async (key = 'portfolio_cms_data') => {
         headers: { Authorization: `Bearer ${kvToken}` }
       });
       if (res.ok) {
-        const json = await res.json();
-        if (json && json.result !== undefined && json.result !== null) {
-          return typeof json.result === 'string' ? JSON.parse(json.result) : json.result;
+        const text = await res.text();
+        if (text && text.trim()) {
+          const json = JSON.parse(text);
+          if (json && json.result !== undefined && json.result !== null) {
+            return typeof json.result === 'string' ? JSON.parse(json.result) : json.result;
+          }
         }
       }
     } catch (err) {
@@ -222,10 +225,13 @@ const loadFromSupabase = async (key = 'portfolio_cms_data') => {
         }
       });
       if (res.ok) {
-        const rows = await res.json();
-        if (Array.isArray(rows) && rows.length > 0) {
-          const val = rows[0].value;
-          return typeof val === 'string' ? JSON.parse(val) : val;
+        const text = await res.text();
+        if (text && text.trim()) {
+          const rows = JSON.parse(text);
+          if (Array.isArray(rows) && rows.length > 0) {
+            const val = rows[0].value;
+            return typeof val === 'string' ? JSON.parse(val) : val;
+          }
         }
       }
     } catch (err) {
@@ -264,20 +270,130 @@ const saveToSupabase = async (key = 'portfolio_cms_data', data) => {
   return false;
 };
 
+// 3. GitHub Gist REST API Adapter
+const loadFromGist = async (filename = 'portfolio_data.json') => {
+  const gistId = process.env.GITHUB_GIST_ID;
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.PORTFOLIO_GITHUB_TOKEN;
+
+  if (gistId) {
+    try {
+      const headers = { 'User-Agent': 'Portfolio-CMS' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
+      if (res.ok) {
+        const text = await res.text();
+        if (text && text.trim()) {
+          const gist = JSON.parse(text);
+          const file = gist.files && (gist.files[filename] || Object.values(gist.files)[0]);
+          if (file && file.content) {
+            return typeof file.content === 'string' ? JSON.parse(file.content) : file.content;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[API Data] GitHub Gist load error:', err);
+    }
+  }
+  return null;
+};
+
+const saveToGist = async (filename = 'portfolio_data.json', data) => {
+  const gistId = process.env.GITHUB_GIST_ID;
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.PORTFOLIO_GITHUB_TOKEN;
+
+  if (gistId && token) {
+    try {
+      const payloadString = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+      const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'Portfolio-CMS'
+        },
+        body: JSON.stringify({
+          description: 'Akash Verma Portfolio CMS Central Data',
+          files: {
+            [filename]: { content: payloadString }
+          }
+        })
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('[API Data] GitHub Gist save error:', err);
+    }
+  }
+  return false;
+};
+
+// 4. JSONBin.io REST API Adapter
+const loadFromJSONBin = async () => {
+  const binId = process.env.JSONBIN_BIN_ID;
+  const apiKey = process.env.JSONBIN_API_KEY || process.env.JSONBIN_ACCESS_KEY;
+
+  if (binId) {
+    try {
+      const headers = {};
+      if (apiKey) headers['X-Master-Key'] = apiKey;
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, { headers });
+      if (res.ok) {
+        const text = await res.text();
+        if (text && text.trim()) {
+          const json = JSON.parse(text);
+          if (json && json.record) return json.record;
+        }
+      }
+    } catch (err) {
+      console.error('[API Data] JSONBin load error:', err);
+    }
+  }
+  return null;
+};
+
+const saveToJSONBin = async (data) => {
+  const binId = process.env.JSONBIN_BIN_ID;
+  const apiKey = process.env.JSONBIN_API_KEY || process.env.JSONBIN_ACCESS_KEY;
+
+  if (binId && apiKey) {
+    try {
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': apiKey
+        },
+        body: JSON.stringify(data)
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('[API Data] JSONBin save error:', err);
+    }
+  }
+  return false;
+};
+
 // Primary Storage Reader
 const readStorage = async () => {
   // 1. Try Upstash Redis / Vercel KV
   const kvData = await loadFromKV('portfolio_cms_data');
-  if (kvData) return { data: kvData, provider: 'Upstash/KV' };
+  if (kvData) return { data: kvData, provider: 'Upstash / Vercel KV' };
 
   // 2. Try Supabase
   const supaData = await loadFromSupabase('portfolio_cms_data');
   if (supaData) return { data: supaData, provider: 'Supabase' };
 
-  // 3. Try In-memory cache
+  // 3. Try GitHub Gist
+  const gistData = await loadFromGist('portfolio_data.json');
+  if (gistData) return { data: gistData, provider: 'GitHub Gist' };
+
+  // 4. Try JSONBin.io
+  const binData = await loadFromJSONBin();
+  if (binData) return { data: binData, provider: 'JSONBin.io' };
+
+  // 5. Try In-memory cache per active serverless instance
   if (memoryData) return { data: memoryData, provider: 'Memory' };
 
-  // 4. Try Local File System
+  // 6. Try Local File System
   const filePath = getDataFilePath();
   if (fs.existsSync(filePath)) {
     try {
@@ -289,7 +405,7 @@ const readStorage = async () => {
     } catch (e) {}
   }
 
-  // 5. Fallback to hardcoded defaults
+  // 7. Fallback to hardcoded defaults
   memoryData = JSON.parse(JSON.stringify(defaults));
   return { data: memoryData, provider: 'Defaults' };
 };
@@ -309,7 +425,17 @@ const writeStorage = async (data) => {
     savedToDatabase = true;
   }
 
-  // 3. Local disk (works during local npm run dev testing)
+  // 3. GitHub Gist
+  if (await saveToGist('portfolio_data.json', data)) {
+    savedToDatabase = true;
+  }
+
+  // 4. JSONBin.io
+  if (await saveToJSONBin(data)) {
+    savedToDatabase = true;
+  }
+
+  // 5. Local disk (works during local dev testing)
   try {
     const filePath = getDataFilePath();
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
@@ -321,24 +447,50 @@ const writeStorage = async (data) => {
   return savedToDatabase;
 };
 
+// Identify active persistent provider name
+const getActiveProvider = () => {
+  if (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL) return 'Upstash / Vercel KV';
+  if (process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)) return 'Supabase';
+  if (process.env.GITHUB_GIST_ID && (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.PORTFOLIO_GITHUB_TOKEN)) return 'GitHub Gist';
+  if (process.env.JSONBIN_BIN_ID && (process.env.JSONBIN_API_KEY || process.env.JSONBIN_ACCESS_KEY)) return 'JSONBin.io';
+  if (process.env.VERCEL !== '1') return 'Local Disk (.data)';
+  return 'None (Cloud Database Setup Required in Vercel)';
+};
+
 // Check if persistent database service is configured in Vercel env
 const isDatabaseConfigured = () => {
   const hasKV = !!(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL);
   const hasSupa = !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY));
-  return hasKV || hasSupa || process.env.VERCEL !== '1';
+  const hasGist = !!(process.env.GITHUB_GIST_ID && (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.PORTFOLIO_GITHUB_TOKEN));
+  const hasJSONBin = !!(process.env.JSONBIN_BIN_ID && (process.env.JSONBIN_API_KEY || process.env.JSONBIN_ACCESS_KEY));
+  // Local disk is NOT a real persistent database on Vercel (ephemeral filesystem)
+  const isLocalDev = process.env.VERCEL !== '1';
+  return hasKV || hasSupa || hasGist || hasJSONBin || isLocalDev;
+};
+
+// Admin authentication check — validates ADMIN_API_SECRET header
+const isAdminAuthenticated = (req) => {
+  const secret = process.env.ADMIN_API_SECRET;
+  // If no secret is configured, allow writes (backward-compatible for local dev)
+  if (!secret) return true;
+  const provided = (req.headers && (req.headers['x-admin-secret'] || req.headers['authorization'])) || '';
+  // Support both "x-admin-secret: <token>" and "Bearer <token>"
+  const token = provided.startsWith('Bearer ') ? provided.slice(7) : provided;
+  return token === secret;
 };
 
 module.exports = async (req, res) => {
   // Prevent any browser or CDN caching on API response
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, x-admin-secret');
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(200).json({ success: true });
   }
 
   try {
@@ -354,20 +506,34 @@ module.exports = async (req, res) => {
         success: true,
         data: merged,
         provider,
+        activeProvider: getActiveProvider(),
         isDatabaseConnected: dbConnected,
         updatedAt: Date.now()
       });
     }
 
     if (req.method === 'POST' || req.method === 'PUT') {
+      // Authenticate admin for write operations
+      if (!isAdminAuthenticated(req)) {
+        return res.status(401).json({ success: false, error: 'Unauthorized — invalid or missing admin secret' });
+      }
+
       let body = req.body;
       if (typeof body === 'string') {
-        try { body = JSON.parse(body); } catch (e) {}
+        try {
+          body = JSON.parse(body);
+        } catch (e) {
+          return res.status(400).json({ success: false, error: 'Malformed JSON payload in request body' });
+        }
+      }
+
+      if (!body || typeof body !== 'object') {
+        return res.status(400).json({ success: false, error: 'Request body must be a valid JSON object' });
       }
 
       const { data: currentData } = await readStorage();
 
-      if (body && body.action === 'reset_all') {
+      if (body.action === 'reset_all') {
         const resetData = JSON.parse(JSON.stringify(defaults));
         const saved = await writeStorage(resetData);
         return res.status(200).json({
@@ -378,8 +544,12 @@ module.exports = async (req, res) => {
         });
       }
 
-      if (body && body.action === 'reset' && body.section) {
-        currentData[body.section] = JSON.parse(JSON.stringify(defaults[body.section] || null));
+      if (body.action === 'reset' && body.section) {
+        if (defaults[body.section] !== undefined) {
+          currentData[body.section] = JSON.parse(JSON.stringify(defaults[body.section]));
+        } else {
+          currentData[body.section] = null;
+        }
         const saved = await writeStorage(currentData);
         return res.status(200).json({
           success: true,
@@ -389,7 +559,7 @@ module.exports = async (req, res) => {
         });
       }
 
-      if (body && body.section && body.value !== undefined) {
+      if (body.section && body.value !== undefined) {
         currentData[body.section] = body.value;
         const saved = await writeStorage(currentData);
         return res.status(200).json({
@@ -400,7 +570,7 @@ module.exports = async (req, res) => {
         });
       }
 
-      if (body && typeof body === 'object' && !body.action && !body.section) {
+      if (!body.action && !body.section && Object.keys(body).length > 0) {
         const updated = { ...currentData, ...body };
         const saved = await writeStorage(updated);
         return res.status(200).json({
@@ -415,6 +585,11 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'DELETE') {
+      // Authenticate admin for delete operations
+      if (!isAdminAuthenticated(req)) {
+        return res.status(401).json({ success: false, error: 'Unauthorized — invalid or missing admin secret' });
+      }
+
       const resetData = JSON.parse(JSON.stringify(defaults));
       const saved = await writeStorage(resetData);
       return res.status(200).json({
@@ -425,7 +600,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: `Method ${req.method} not allowed` });
   } catch (err) {
     console.error('[API Data] Endpoint error:', err);
     return res.status(500).json({ success: false, error: err.message || 'Internal Server Error' });

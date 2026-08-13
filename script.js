@@ -127,207 +127,372 @@ document.addEventListener('DOMContentLoaded', () => {
   initIntroScreen();
 
   // ==========================================
-  // 1. GALLERY DATASET (from CMS Data Layer)
+  // 1. GALLERY DATASET & LIGHTBOX MODAL
   // ==========================================
-  const galleryData = (typeof PortfolioData !== 'undefined' ? PortfolioData.get('gallery') : [])
-    .filter(item => item.enabled !== false);
+  const lightboxModal = document.getElementById('gallery-lightbox');
+  const lightboxClose = document.getElementById('lightbox-close');
+  const lightboxImg = document.getElementById('lightbox-img');
+  const lightboxBadge = document.getElementById('lightbox-badge');
+  const lightboxDate = document.getElementById('lightbox-date');
+  const lightboxTitle = document.getElementById('lightbox-title');
+  const lightboxCaption = document.getElementById('lightbox-caption');
+
+  const openLightbox = (item) => {
+    if (!lightboxModal || !item) return;
+
+    if (lightboxImg) {
+      lightboxImg.src = item.src;
+      lightboxImg.alt = item.title || 'Gallery image';
+    }
+    if (lightboxBadge) lightboxBadge.textContent = item.category || '';
+    if (lightboxDate) lightboxDate.textContent = item.date || '';
+    if (lightboxTitle) lightboxTitle.textContent = item.title || '';
+    if (lightboxCaption) lightboxCaption.textContent = item.caption || '';
+
+    lightboxModal.classList.add('is-open');
+    lightboxModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeLightbox = () => {
+    if (!lightboxModal) return;
+    lightboxModal.classList.remove('is-open');
+    lightboxModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  };
+
+  if (lightboxClose) {
+    lightboxClose.addEventListener('click', closeLightbox);
+  }
+
+  if (lightboxModal) {
+    lightboxModal.addEventListener('click', (e) => {
+      if (e.target === lightboxModal) {
+        closeLightbox();
+      }
+    });
+  }
 
   // ==========================================
   // 1.5. DYNAMIC CMS CONTENT RENDERER
   // ==========================================
+  const renderGalleryGrid = (items) => {
+    const galleryGrid = document.getElementById('gallery-grid');
+    if (!galleryGrid) return;
+    const enabledItems = (Array.isArray(items) ? items : []).filter(item => item && item.enabled !== false);
+    
+    galleryGrid.innerHTML = enabledItems.map(item => `
+      <div class="gallery-opencluely-card" data-id="${escHTML(item.id)}" tabindex="0" role="button" aria-label="View photo: ${escHTML(item.title)}">
+        <div class="gallery-card-image-wrapper">
+          <img src="${escHTML(item.src)}" alt="${escHTML(item.title)}" class="gallery-card-img" loading="lazy">
+        </div>
+        <div class="gallery-card-content">
+          <h3 class="gallery-card-title">${escHTML(item.title)}</h3>
+          <span class="gallery-card-category mono">${escHTML(item.category)}</span>
+        </div>
+      </div>
+    `).join('');
+
+    galleryGrid.querySelectorAll('.gallery-opencluely-card').forEach(card => {
+      const itemId = card.getAttribute('data-id');
+      const item = enabledItems.find(d => d.id === itemId);
+
+      card.addEventListener('click', () => {
+        if (item) openLightbox(item);
+      });
+
+      card.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && item) {
+          e.preventDefault();
+          openLightbox(item);
+        }
+      });
+    });
+  };
+
   const renderCMSContent = () => {
     if (typeof PortfolioData !== 'undefined') {
       const data = PortfolioData.getAll();
+      if (!data) return;
 
       // --- Hero ---
-      const heroBadge = document.querySelector('.hero-badge');
-      if (heroBadge && data.hero.badge) {
-        heroBadge.innerHTML = `<span class="status-dot interactive"></span>${data.hero.badge}`;
-      }
-      const heroHeadline = document.querySelector('.hero-headline');
-      if (heroHeadline && data.hero.headline) {
-        heroHeadline.innerHTML = data.hero.headline;
-      }
-      const heroLead = document.querySelector('.hero-lead');
-      if (heroLead && data.hero.lead) {
-        heroLead.textContent = data.hero.lead;
-      }
+      if (data.hero) {
+        const heroBadge = document.querySelector('.hero-badge');
+        if (heroBadge && data.hero.badge) {
+          heroBadge.innerHTML = `<span class="status-dot interactive"></span>${data.hero.badge}`;
+        }
+        const heroHeadline = document.querySelector('.hero-headline');
+        if (heroHeadline && data.hero.headline) {
+          heroHeadline.innerHTML = data.hero.headline;
+        }
+        const heroLead = document.querySelector('.hero-lead');
+        if (heroLead && data.hero.lead) {
+          heroLead.textContent = data.hero.lead;
+        }
 
-      // --- About ---
-      const aboutTitle = document.querySelector('#about .card-section-title');
-      if (aboutTitle && data.about.title) aboutTitle.textContent = data.about.title;
-      const aboutSub = document.querySelector('#about .card-section-sub');
-      if (aboutSub && data.about.subtitle) aboutSub.textContent = data.about.subtitle;
+        const heroCtaPrimary = document.querySelector('.hero-actions a.btn-primary');
+        if (heroCtaPrimary && data.hero.ctaPrimary) {
+          heroCtaPrimary.href = data.hero.ctaPrimary.url || '#fieldlog';
+          const icon = data.hero.ctaPrimary.icon || 'fas fa-arrow-down';
+          heroCtaPrimary.innerHTML = `<i class="${escHTML(icon)}"></i><span>${escHTML(data.hero.ctaPrimary.text || 'View Projects')}</span>`;
+        }
 
-      const aboutProfileImg = document.getElementById('about-profile-img');
-      const aboutProfileWrapper = document.getElementById('about-profile-wrapper');
-      if (aboutProfileImg && aboutProfileWrapper) {
-        if (data.about.profileImage) {
-          aboutProfileImg.src = data.about.profileImage;
-          aboutProfileWrapper.style.display = 'block';
-        } else {
-          aboutProfileWrapper.style.display = 'none';
+        const heroCtaSecondary = document.querySelector('.hero-actions a.btn-secondary');
+        if (heroCtaSecondary && data.hero.ctaSecondary) {
+          heroCtaSecondary.href = data.hero.ctaSecondary.url || 'https://github.com/iakashverma';
+          const icon = data.hero.ctaSecondary.icon || 'fab fa-github';
+          heroCtaSecondary.innerHTML = `<i class="${escHTML(icon)}"></i><span>${escHTML(data.hero.ctaSecondary.text || 'View Source')}</span>`;
         }
       }
 
-      if (data.about.bio && data.about.bio.length) {
-        const bioParas = document.querySelectorAll('.about-bio p');
-        data.about.bio.forEach((pText, i) => {
-          if (bioParas[i]) bioParas[i].textContent = pText;
-        });
+      // --- About ---
+      if (data.about) {
+        const aboutTitle = document.querySelector('#about .card-section-title');
+        if (aboutTitle && data.about.title) aboutTitle.textContent = data.about.title;
+        const aboutSub = document.querySelector('#about .card-section-sub');
+        if (aboutSub && data.about.subtitle) aboutSub.textContent = data.about.subtitle;
+
+        const aboutProfileImg = document.getElementById('about-profile-img');
+        const aboutProfileWrapper = document.getElementById('about-profile-wrapper');
+        if (aboutProfileImg && aboutProfileWrapper) {
+          if (data.about.profileImage) {
+            aboutProfileImg.src = data.about.profileImage;
+            aboutProfileWrapper.style.display = 'block';
+          } else {
+            aboutProfileWrapper.style.display = 'none';
+          }
+        }
+
+        if (Array.isArray(data.about.bio) && data.about.bio.length) {
+          const bioContainer = document.querySelector('.about-bio');
+          if (bioContainer) {
+            bioContainer.innerHTML = data.about.bio.map((pText, i) => {
+              const cls = i === 0 ? 'about-lead' : '';
+              const div = i > 0 ? '<div class="about-divider"></div>' : '';
+              return `${div}<p class="${cls}">${escHTML(pText)}</p>`;
+            }).join('');
+          }
+        }
       }
 
       // --- Projects (Max 6 + Show More toggle) ---
-      const projectsGrid = document.querySelector('#fieldlog .card-grid');
-      const projectsContainer = document.querySelector('#fieldlog .container');
-      if (projectsGrid && data.projects.items && projectsContainer) {
-        const enabledProjects = data.projects.items.filter(p => p.enabled !== false);
-        if (enabledProjects.length) {
-          projectsGrid.innerHTML = enabledProjects.map((p, index) => `
-            <article class="feature-card project-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
-              <div class="feature-card-icon">
-                <i class="${p.icon || 'fas fa-cube'}"></i>
-              </div>
-              <h3 class="feature-card-title">${escHTML(p.title)}</h3>
-              <p class="feature-card-desc">${escHTML(p.description)}</p>
-              <div class="project-actions">
-                ${p.githubUrl ? `<a href="${escHTML(p.githubUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">GitHub</a>` : ''}
-                ${p.demoUrl ? `<a href="${escHTML(p.demoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>` : ''}
-                ${p.domain ? `<span class="btn-project-pill project-domain-pill">${escHTML(p.domain)}</span>` : ''}
-              </div>
-            </article>
-          `).join('');
+      if (data.projects) {
+        const projTitle = document.querySelector('#fieldlog .card-section-title');
+        if (projTitle && data.projects.title) projTitle.textContent = data.projects.title;
+        const projSub = document.querySelector('#fieldlog .card-section-sub');
+        if (projSub && data.projects.subtitle) projSub.textContent = data.projects.subtitle;
 
-          // Clean up previous toggle container if any
-          const oldProjectToggle = projectsContainer.querySelector('.section-toggle-wrapper[data-for="projects"]');
-          if (oldProjectToggle) oldProjectToggle.remove();
+        const projectsGrid = document.querySelector('#fieldlog .card-grid');
+        const projectsContainer = document.querySelector('#fieldlog .container');
+        if (projectsGrid && data.projects.items && projectsContainer) {
+          const enabledProjects = data.projects.items.filter(p => p.enabled !== false);
+          if (enabledProjects.length) {
+            projectsGrid.innerHTML = enabledProjects.map((p, index) => `
+              <article class="feature-card project-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
+                <div class="feature-card-icon">
+                  <i class="${escHTML(p.icon || 'fas fa-cube')}"></i>
+                </div>
+                <h3 class="feature-card-title">${escHTML(p.title)}</h3>
+                <p class="feature-card-desc">${escHTML(p.description)}</p>
+                <div class="project-actions">
+                  ${p.githubUrl ? `<a href="${escHTML(p.githubUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">GitHub</a>` : ''}
+                  ${p.demoUrl ? `<a href="${escHTML(p.demoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill">Live Demo</a>` : ''}
+                  ${p.domain ? `<span class="btn-project-pill project-domain-pill">${escHTML(p.domain)}</span>` : ''}
+                </div>
+              </article>
+            `).join('');
 
-          if (enabledProjects.length > 6) {
-            const toggleWrap = document.createElement('div');
-            toggleWrap.className = 'section-toggle-wrapper';
-            toggleWrap.setAttribute('data-for', 'projects');
-            toggleWrap.innerHTML = `
-              <button type="button" class="btn-show-toggle">
-                <span>Show More</span>
-                <i class="fas fa-chevron-down"></i>
-              </button>
-            `;
-            projectsContainer.appendChild(toggleWrap);
+            const oldProjectToggle = projectsContainer.querySelector('.section-toggle-wrapper[data-for="projects"]');
+            if (oldProjectToggle) oldProjectToggle.remove();
 
-            const toggleBtn = toggleWrap.querySelector('.btn-show-toggle');
-            let isExpanded = false;
+            if (enabledProjects.length > 6) {
+              const toggleWrap = document.createElement('div');
+              toggleWrap.className = 'section-toggle-wrapper';
+              toggleWrap.setAttribute('data-for', 'projects');
+              toggleWrap.innerHTML = `
+                <button type="button" class="btn-show-toggle">
+                  <span>Show More</span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+              `;
+              projectsContainer.appendChild(toggleWrap);
 
-            toggleBtn.addEventListener('click', () => {
-              isExpanded = !isExpanded;
-              const extraCards = projectsGrid.querySelectorAll('.project-card.is-hidden-card');
-              extraCards.forEach(card => {
-                card.classList.toggle('is-visible-card', isExpanded);
+              const toggleBtn = toggleWrap.querySelector('.btn-show-toggle');
+              let isExpanded = false;
+
+              toggleBtn.addEventListener('click', () => {
+                isExpanded = !isExpanded;
+                const extraCards = projectsGrid.querySelectorAll('.project-card.is-hidden-card');
+                extraCards.forEach(card => {
+                  card.classList.toggle('is-visible-card', isExpanded);
+                });
+                toggleBtn.querySelector('span').textContent = isExpanded ? 'Show Less' : 'Show More';
+                toggleBtn.querySelector('i').className = isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
               });
-              toggleBtn.querySelector('span').textContent = isExpanded ? 'Show Less' : 'Show More';
-              toggleBtn.querySelector('i').className = isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
-            });
+            }
           }
         }
       }
 
       // --- Skills ---
-      const skillsGrid = document.querySelector('#stack .skills-grid');
-      if (skillsGrid && data.skills.categories) {
-        const enabledSkills = data.skills.categories.filter(s => s.enabled !== false);
-        if (enabledSkills.length) {
-          skillsGrid.innerHTML = enabledSkills.map(s => `
-            <div class="skills-card" tabindex="0">
-              <div class="skills-card-header">
-                <i class="${s.icon || 'fas fa-code'}"></i>
-                <h3>${escHTML(s.name)}</h3>
+      if (data.skills) {
+        const skillsTitle = document.querySelector('#stack .card-section-title');
+        if (skillsTitle && data.skills.title) skillsTitle.textContent = data.skills.title;
+        const skillsSub = document.querySelector('#stack .card-section-sub');
+        if (skillsSub && data.skills.subtitle) skillsSub.textContent = data.skills.subtitle;
+
+        const skillsGrid = document.querySelector('#stack .skills-grid');
+        if (skillsGrid && data.skills.categories) {
+          const enabledSkills = data.skills.categories.filter(s => s.enabled !== false);
+          if (enabledSkills.length) {
+            skillsGrid.innerHTML = enabledSkills.map(s => `
+              <div class="skills-card" tabindex="0">
+                <div class="skills-card-header">
+                  <i class="${escHTML(s.icon || 'fas fa-code')}"></i>
+                  <h3>${escHTML(s.name)}</h3>
+                </div>
+                <div class="skills-tags">
+                  ${(s.tags || []).map(t => `<span class="skill-tag">${escHTML(t)}</span>`).join('')}
+                </div>
               </div>
-              <div class="skills-tags">
-                ${(s.tags || []).map(t => `<span class="skill-tag">${escHTML(t)}</span>`).join('')}
-              </div>
-            </div>
-          `).join('');
+            `).join('');
+          }
         }
       }
 
       // --- Education ---
-      const eduGrid = document.querySelector('#education .timeline-grid');
-      if (eduGrid && data.education.items) {
-        const enabledEdu = data.education.items.filter(e => e.enabled !== false);
-        if (enabledEdu.length) {
-          eduGrid.innerHTML = enabledEdu.map(e => `
-            <div class="timeline-card" tabindex="0">
-              <div class="timeline-card-top">
-                <div class="timeline-icon">
-                  <i class="${e.icon || 'fas fa-graduation-cap'}"></i>
+      if (data.education) {
+        const eduTitle = document.querySelector('#education .card-section-title');
+        if (eduTitle && data.education.title) eduTitle.textContent = data.education.title;
+        const eduSub = document.querySelector('#education .card-section-sub');
+        if (eduSub && data.education.subtitle) eduSub.textContent = data.education.subtitle;
+
+        const eduGrid = document.querySelector('#education .timeline-grid');
+        if (eduGrid && data.education.items) {
+          const enabledEdu = data.education.items.filter(e => e.enabled !== false);
+          if (enabledEdu.length) {
+            eduGrid.innerHTML = enabledEdu.map(e => `
+              <div class="timeline-card" tabindex="0">
+                <div class="timeline-card-top">
+                  <div class="timeline-icon">
+                    <i class="${escHTML(e.icon || 'fas fa-graduation-cap')}"></i>
+                  </div>
+                  <span class="timeline-badge">${escHTML(e.badge)}</span>
                 </div>
-                <span class="timeline-badge">${escHTML(e.badge)}</span>
+                <div class="timeline-body">
+                  <div class="timeline-header">
+                    <h3 class="timeline-degree">${escHTML(e.degree)}</h3>
+                    <span class="timeline-level">${escHTML(e.level)}</span>
+                    <span class="timeline-org">${escHTML(e.org)}</span>
+                  </div>
+                  <p class="timeline-desc">${escHTML(e.description)}</p>
+                  <div class="timeline-highlights">
+                    ${(e.highlights || []).map(h => `<span class="highlight-tag mono"><i class="fas fa-check"></i> ${escHTML(h)}</span>`).join('')}
+                  </div>
+                </div>
               </div>
-              <div class="timeline-body">
-                <div class="timeline-header">
-                  <h3 class="timeline-degree">${escHTML(e.degree)}</h3>
-                  <span class="timeline-level">${escHTML(e.level)}</span>
-                  <span class="timeline-org">${escHTML(e.org)}</span>
-                </div>
-                <p class="timeline-desc">${escHTML(e.description)}</p>
-                <div class="timeline-highlights">
-                  ${(e.highlights || []).map(h => `<span class="highlight-tag mono"><i class="fas fa-check"></i> ${escHTML(h)}</span>`).join('')}
-                </div>
-              </div>
-            </div>
-          `).join('');
+            `).join('');
+          }
         }
       }
 
       // --- Certifications (Max 6 + Show More toggle) ---
-      const certsGrid = document.querySelector('#certifications .card-grid');
-      const certsContainer = document.querySelector('#certifications .container');
-      if (certsGrid && data.certifications.items && certsContainer) {
-        const enabledCerts = data.certifications.items.filter(c => c.enabled !== false);
-        if (enabledCerts.length) {
-          certsGrid.innerHTML = enabledCerts.map((c, index) => `
-            <article class="feature-card cert-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
-              <div class="feature-card-icon">
-                <i class="${c.icon || 'fas fa-certificate'}"></i>
-              </div>
-              <h3 class="feature-card-title">${escHTML(c.title)}</h3>
-              <p class="feature-card-desc">${escHTML(c.description)}</p>
-              <a href="${escHTML(c.url || '#')}" target="_blank" rel="noopener noreferrer" class="btn-view-cert">
-                <span>View Certificate</span>
-                <span class="cert-arrow">→</span>
-              </a>
-            </article>
-          `).join('');
+      if (data.certifications) {
+        const certTitle = document.querySelector('#certifications .card-section-title');
+        if (certTitle && data.certifications.title) certTitle.textContent = data.certifications.title;
+        const certSub = document.querySelector('#certifications .card-section-sub');
+        if (certSub && data.certifications.subtitle) certSub.textContent = data.certifications.subtitle;
 
-          // Clean up previous toggle container if any
-          const oldCertToggle = certsContainer.querySelector('.section-toggle-wrapper[data-for="certifications"]');
-          if (oldCertToggle) oldCertToggle.remove();
+        const certsGrid = document.querySelector('#certifications .card-grid');
+        const certsContainer = document.querySelector('#certifications .container');
+        if (certsGrid && data.certifications.items && certsContainer) {
+          const enabledCerts = data.certifications.items.filter(c => c.enabled !== false);
+          if (enabledCerts.length) {
+            certsGrid.innerHTML = enabledCerts.map((c, index) => `
+              <article class="feature-card cert-card ${index >= 6 ? 'is-hidden-card' : ''}" tabindex="0">
+                <div class="feature-card-icon">
+                  <i class="${escHTML(c.icon || 'fas fa-certificate')}"></i>
+                </div>
+                <h3 class="feature-card-title">${escHTML(c.title)}</h3>
+                <p class="feature-card-desc">${escHTML(c.description)}</p>
+                <a href="${escHTML(c.url || '#')}" target="_blank" rel="noopener noreferrer" class="btn-view-cert">
+                  <span>View Certificate</span>
+                  <span class="cert-arrow">→</span>
+                </a>
+              </article>
+            `).join('');
 
-          if (enabledCerts.length > 6) {
-            const toggleWrap = document.createElement('div');
-            toggleWrap.className = 'section-toggle-wrapper';
-            toggleWrap.setAttribute('data-for', 'certifications');
-            toggleWrap.innerHTML = `
-              <button type="button" class="btn-show-toggle">
-                <span>Show More</span>
-                <i class="fas fa-chevron-down"></i>
-              </button>
-            `;
-            certsContainer.appendChild(toggleWrap);
+            const oldCertToggle = certsContainer.querySelector('.section-toggle-wrapper[data-for="certifications"]');
+            if (oldCertToggle) oldCertToggle.remove();
 
-            const toggleBtn = toggleWrap.querySelector('.btn-show-toggle');
-            let isExpanded = false;
+            if (enabledCerts.length > 6) {
+              const toggleWrap = document.createElement('div');
+              toggleWrap.className = 'section-toggle-wrapper';
+              toggleWrap.setAttribute('data-for', 'certifications');
+              toggleWrap.innerHTML = `
+                <button type="button" class="btn-show-toggle">
+                  <span>Show More</span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+              `;
+              certsContainer.appendChild(toggleWrap);
 
-            toggleBtn.addEventListener('click', () => {
-              isExpanded = !isExpanded;
-              const extraCards = certsGrid.querySelectorAll('.cert-card.is-hidden-card');
-              extraCards.forEach(card => {
-                card.classList.toggle('is-visible-card', isExpanded);
+              const toggleBtn = toggleWrap.querySelector('.btn-show-toggle');
+              let isExpanded = false;
+
+              toggleBtn.addEventListener('click', () => {
+                isExpanded = !isExpanded;
+                const extraCards = certsGrid.querySelectorAll('.cert-card.is-hidden-card');
+                extraCards.forEach(card => {
+                  card.classList.toggle('is-visible-card', isExpanded);
+                });
+                toggleBtn.querySelector('span').textContent = isExpanded ? 'Show Less' : 'Show More';
+                toggleBtn.querySelector('i').className = isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
               });
-              toggleBtn.querySelector('span').textContent = isExpanded ? 'Show Less' : 'Show More';
-              toggleBtn.querySelector('i').className = isExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
-            });
+            }
           }
         }
+      }
+
+      // --- Presence ---
+      if (data.presence) {
+        const presTitle = document.querySelector('#presence .card-section-title');
+        if (presTitle && data.presence.title) presTitle.textContent = data.presence.title;
+        const presSub = document.querySelector('#presence .card-section-sub');
+        if (presSub && data.presence.subtitle) presSub.textContent = data.presence.subtitle;
+
+        if (Array.isArray(data.presence.platforms)) {
+          data.presence.platforms.forEach(plat => {
+            if (!plat || !plat.id) return;
+            const cardMap = {
+              github: '.presence-github-card',
+              leetcode: '#card-leetcode',
+              gfg: '#card-gfg',
+              hackerrank: '#card-hackerrank',
+              linkedin: '#card-linkedin',
+              instagram: '#card-instagram'
+            };
+            const cardEl = document.querySelector(cardMap[plat.id]);
+            if (cardEl) {
+              cardEl.style.display = plat.enabled === false ? 'none' : '';
+              const linkBtn = cardEl.querySelector('.presence-link-btn');
+              if (linkBtn && plat.url) linkBtn.href = plat.url;
+              const userEl = cardEl.querySelector('.presence-username');
+              if (userEl && plat.username) userEl.textContent = plat.username;
+            }
+          });
+        }
+      }
+
+      // --- Gallery ---
+      if (data.gallery) {
+        const galTitle = document.querySelector('#gallery .card-section-title');
+        if (galTitle && data.gallery.title) galTitle.textContent = data.gallery.title;
+        const galSub = document.querySelector('#gallery .card-section-sub');
+        if (galSub && data.gallery.subtitle) galSub.textContent = data.gallery.subtitle;
+
+        const galleryItems = Array.isArray(data.gallery) ? data.gallery : (data.gallery.items || []);
+        renderGalleryGrid(galleryItems);
       }
 
       // --- Social Icons & Links Resolver ---
@@ -352,30 +517,59 @@ document.addEventListener('DOMContentLoaded', () => {
         return 'fas fa-link';
       };
 
-      // --- Contact Quick Links ---
-      const connectQuickLinks = document.querySelector('.connect-quick-links');
-      if (connectQuickLinks && data.contact.socialLinks) {
-        connectQuickLinks.innerHTML = data.contact.socialLinks.map(link => {
-          const iconClass = getPlatformIcon(link.platform, link.url, link.icon);
-          const isMail = (link.url || '').startsWith('mailto:');
-          return `<a href="${link.url}" ${isMail ? '' : 'target="_blank" rel="noopener noreferrer"'} class="btn btn-secondary btn-icon-only" title="${link.platform}" aria-label="${link.platform}"><i class="${iconClass}"></i></a>`;
-        }).join('');
+      // --- Contact ---
+      if (data.contact) {
+        const connTitle = document.querySelector('#connect .card-section-title');
+        if (connTitle && data.contact.title) connTitle.textContent = data.contact.title;
+        const connSub = document.querySelector('#connect .card-section-sub');
+        if (connSub && data.contact.subtitle) connSub.textContent = data.contact.subtitle;
+
+        const mapTitleEl = document.querySelector('.map-title');
+        if (mapTitleEl && data.contact.mapTitle) mapTitleEl.textContent = data.contact.mapTitle;
+
+        const mapBadgeEl = document.querySelector('.map-badge');
+        if (mapBadgeEl && data.contact.mapLocation) {
+          mapBadgeEl.innerHTML = `<i class="fas fa-location-dot" aria-hidden="true"></i> ${escHTML(data.contact.mapLocation)}`;
+        }
+
+        const mapIframe = document.querySelector('.map-frame-container iframe');
+        if (mapIframe && data.contact.mapEmbedUrl) {
+          if (mapIframe.src !== data.contact.mapEmbedUrl) {
+            mapIframe.src = data.contact.mapEmbedUrl;
+          }
+        }
+
+        const mapOpenBtn = document.querySelector('.map-open-btn');
+        if (mapOpenBtn && data.contact.mapLink) {
+          mapOpenBtn.href = data.contact.mapLink;
+        }
+
+        const connectQuickLinks = document.querySelector('.connect-quick-links');
+        if (connectQuickLinks && data.contact.socialLinks) {
+          connectQuickLinks.innerHTML = data.contact.socialLinks.map(link => {
+            const iconClass = getPlatformIcon(link.platform, link.url, link.icon);
+            const isMail = (link.url || '').startsWith('mailto:');
+            return `<a href="${escHTML(link.url)}" ${isMail ? '' : 'target="_blank" rel="noopener noreferrer"'} class="btn btn-secondary btn-icon-only" title="${escHTML(link.platform)}" aria-label="${escHTML(link.platform)}"><i class="${iconClass}"></i></a>`;
+          }).join('');
+        }
       }
 
       // --- Footer ---
-      const footerDesc = document.querySelector('.footer-description');
-      if (footerDesc && data.footer.description) footerDesc.textContent = data.footer.description;
-      
-      const footerCopySpan = document.querySelector('.footer-copyright span:not(.license-tag)');
-      if (footerCopySpan && data.footer.copyright) footerCopySpan.textContent = data.footer.copyright;
+      if (data.footer) {
+        const footerDesc = document.querySelector('.footer-description');
+        if (footerDesc && data.footer.description) footerDesc.textContent = data.footer.description;
+        
+        const footerCopySpan = document.querySelector('.footer-copyright span:not(.license-tag)');
+        if (footerCopySpan && data.footer.copyright) footerCopySpan.textContent = data.footer.copyright;
 
-      const footerSocials = document.querySelector('.footer-socials');
-      if (footerSocials && data.footer.socialLinks) {
-        footerSocials.innerHTML = data.footer.socialLinks.map(link => {
-          const iconClass = getPlatformIcon(link.platform, link.url, link.icon);
-          const isMail = (link.url || '').startsWith('mailto:');
-          return `<a href="${link.url}" ${isMail ? '' : 'target="_blank" rel="noopener noreferrer"'} aria-label="${link.platform}" class="footer-social-btn"><i class="${iconClass}"></i></a>`;
-        }).join('');
+        const footerSocials = document.querySelector('.footer-socials');
+        if (footerSocials && data.footer.socialLinks) {
+          footerSocials.innerHTML = data.footer.socialLinks.map(link => {
+            const iconClass = getPlatformIcon(link.platform, link.url, link.icon);
+            const isMail = (link.url || '').startsWith('mailto:');
+            return `<a href="${escHTML(link.url)}" ${isMail ? '' : 'target="_blank" rel="noopener noreferrer"'} aria-label="${escHTML(link.platform)}" class="footer-social-btn"><i class="${iconClass}"></i></a>`;
+          }).join('');
+        }
       }
     }
   };
@@ -516,82 +710,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================
-  // 6. GALLERY RENDERER & LIGHTBOX MODAL
+  // 6. GALLERY & LIGHTBOX (handled dynamically via renderCMSContent)
   // ==========================================
-  const galleryGrid = document.getElementById('gallery-grid');
-  const lightboxModal = document.getElementById('gallery-lightbox');
-  const lightboxClose = document.getElementById('lightbox-close');
-  const lightboxImg = document.getElementById('lightbox-img');
-  const lightboxBadge = document.getElementById('lightbox-badge');
-  const lightboxDate = document.getElementById('lightbox-date');
-  const lightboxTitle = document.getElementById('lightbox-title');
-  const lightboxCaption = document.getElementById('lightbox-caption');
-
-  const openLightbox = (item) => {
-    if (!lightboxModal) return;
-
-    lightboxImg.src = item.src;
-    lightboxImg.alt = item.title;
-    lightboxBadge.textContent = item.category;
-    lightboxDate.textContent = item.date || '';
-    lightboxTitle.textContent = item.title;
-    lightboxCaption.textContent = item.caption;
-
-    lightboxModal.classList.add('is-open');
-    lightboxModal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-  };
-
-  const closeLightbox = () => {
-    if (!lightboxModal) return;
-
-    lightboxModal.classList.remove('is-open');
-    lightboxModal.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-  };
-
-  if (galleryGrid) {
-    galleryGrid.innerHTML = galleryData.map(item => `
-      <div class="gallery-opencluely-card" data-id="${escHTML(item.id)}" tabindex="0" role="button" aria-label="View photo: ${escHTML(item.title)}">
-        <div class="gallery-card-image-wrapper">
-          <img src="${escHTML(item.src)}" alt="${escHTML(item.title)}" class="gallery-card-img" loading="lazy">
-        </div>
-        <div class="gallery-card-content">
-          <h3 class="gallery-card-title">${escHTML(item.title)}</h3>
-          <span class="gallery-card-category mono">${escHTML(item.category)}</span>
-        </div>
-      </div>
-    `).join('');
-
-
-    galleryGrid.querySelectorAll('.gallery-opencluely-card').forEach(card => {
-      const itemId = card.getAttribute('data-id');
-      const item = galleryData.find(d => d.id === itemId);
-
-      card.addEventListener('click', () => {
-        if (item) openLightbox(item);
-      });
-
-      card.addEventListener('keydown', (e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && item) {
-          e.preventDefault();
-          openLightbox(item);
-        }
-      });
-    });
-  }
-
-  if (lightboxClose) {
-    lightboxClose.addEventListener('click', closeLightbox);
-  }
-
-  if (lightboxModal) {
-    lightboxModal.addEventListener('click', (e) => {
-      if (e.target === lightboxModal) {
-        closeLightbox();
-      }
-    });
-  }
 
   // ==========================================
   // 7. KEYBOARD SHORTCUTS (1-8 & ESCAPE)
@@ -859,6 +979,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // Safe fetch helper for external stats APIs
+  const safeFetchJson = async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (!text || !text.trim()) return null;
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return null;
+    }
+  };
+
   // 1. GitHub API Fetcher (Live API)
   const fetchGitHubStats = async () => {
     const reposEl = document.getElementById('gh-repos');
@@ -869,9 +1002,8 @@ document.addEventListener('DOMContentLoaded', () => {
     [reposEl, followersEl, starsEl, commitsEl].forEach(setStatLoading);
 
     try {
-      const userRes = await fetch('https://api.github.com/users/iakashverma');
-      if (userRes.ok) {
-        const userData = await userRes.json();
+      const userData = await safeFetchJson('https://api.github.com/users/iakashverma');
+      if (userData) {
         setStatValue(reposEl, userData.public_repos ?? '24');
         setStatValue(followersEl, userData.followers ?? '18');
       } else {
@@ -879,9 +1011,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setStatValue(followersEl, '18');
       }
 
-      const reposRes = await fetch('https://api.github.com/users/iakashverma/repos?per_page=100');
-      if (reposRes.ok) {
-        const reposData = await reposRes.json();
+      const reposData = await safeFetchJson('https://api.github.com/users/iakashverma/repos?per_page=100');
+      if (reposData) {
         const totalStars = Array.isArray(reposData)
           ? reposData.reduce((acc, repo) => acc + (repo.stargazers_count || 0), 0)
           : 0;
@@ -890,9 +1021,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setStatValue(starsEl, '12');
       }
 
-      const eventsRes = await fetch('https://api.github.com/users/iakashverma/events?per_page=100');
-      if (eventsRes.ok && commitsEl) {
-        const eventsData = await eventsRes.json();
+      const eventsData = commitsEl ? await safeFetchJson('https://api.github.com/users/iakashverma/events?per_page=100') : null;
+      if (eventsData && commitsEl) {
         const pushEvents = Array.isArray(eventsData)
           ? eventsData.filter(e => e.type === 'PushEvent')
           : [];
@@ -918,26 +1048,20 @@ document.addEventListener('DOMContentLoaded', () => {
     [solvedEl, breakdownEl].forEach(setStatLoading);
 
     try {
-      const res = await fetch('https://leetcode-stats-api.herokuapp.com/iakashverma');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === 'success' || data.totalSolved !== undefined) {
-          setStatValue(solvedEl, data.totalSolved);
-          setStatValue(breakdownEl, `${data.easySolved || 0}/${data.mediumSolved || 0}/${data.hardSolved || 0}`);
-          return;
-        }
+      const data = await safeFetchJson('https://leetcode-stats-api.herokuapp.com/iakashverma');
+      if (data && (data.status === 'success' || data.totalSolved !== undefined)) {
+        setStatValue(solvedEl, data.totalSolved);
+        setStatValue(breakdownEl, `${data.easySolved || 0}/${data.mediumSolved || 0}/${data.hardSolved || 0}`);
+        return;
       }
       throw new Error('Endpoint unfulfilled');
     } catch (err) {
       try {
-        const altRes = await fetch('https://alfa-leetcode-api.onrender.com/iakashverma/solved');
-        if (altRes.ok) {
-          const altData = await altRes.json();
-          if (altData.solvedProblem !== undefined) {
-            setStatValue(solvedEl, altData.solvedProblem);
-            setStatValue(breakdownEl, `${altData.easySolved || 0}/${altData.mediumSolved || 0}/${altData.hardSolved || 0}`);
-            return;
-          }
+        const altData = await safeFetchJson('https://alfa-leetcode-api.onrender.com/iakashverma/solved');
+        if (altData && altData.solvedProblem !== undefined) {
+          setStatValue(solvedEl, altData.solvedProblem);
+          setStatValue(breakdownEl, `${altData.easySolved || 0}/${altData.mediumSolved || 0}/${altData.hardSolved || 0}`);
+          return;
         }
       } catch (altErr) {
         // Fallthrough to sample feed
@@ -955,14 +1079,11 @@ document.addEventListener('DOMContentLoaded', () => {
     [scoreEl, solvedEl].forEach(setStatLoading);
 
     try {
-      const res = await fetch('https://geeks-for-geeks-stats-api.vercel.app/iakashverma');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.totalProblemsSolved !== undefined || data.overallScore !== undefined) {
-          setStatValue(scoreEl, data.overallScore || '350+');
-          setStatValue(solvedEl, data.totalProblemsSolved || '200+');
-          return;
-        }
+      const data = await safeFetchJson('https://geeks-for-geeks-stats-api.vercel.app/iakashverma');
+      if (data && (data.totalProblemsSolved !== undefined || data.overallScore !== undefined)) {
+        setStatValue(scoreEl, data.overallScore || '350+');
+        setStatValue(solvedEl, data.totalProblemsSolved || '200+');
+        return;
       }
       throw new Error('GFG API unavailable');
     } catch (err) {
@@ -979,14 +1100,11 @@ document.addEventListener('DOMContentLoaded', () => {
     [badgesEl, starsEl].forEach(setStatLoading);
 
     try {
-      const res = await fetch('https://hackerrank-badge-api.vercel.app/api/iakashverma');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.badges) {
-          setStatValue(badgesEl, `${data.badges.length || 6} Badges`);
-          setStatValue(starsEl, `${data.maxStars || 5} ★`);
-          return;
-        }
+      const data = await safeFetchJson('https://hackerrank-badge-api.vercel.app/api/iakashverma');
+      if (data && data.badges) {
+        setStatValue(badgesEl, `${data.badges.length || 6} Badges`);
+        setStatValue(starsEl, `${data.maxStars || 5} ★`);
+        return;
       }
       throw new Error('HackerRank API unfulfilled');
     } catch (err) {
@@ -1167,51 +1285,51 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabLangEl = document.querySelector('.visual-tab span:nth-of-type(2)');
 
   if (codeContainer) {
-    // --- FETCH SNIPPETS FROM CMS DATA LAYER ---
-    const cmsHvData = typeof PortfolioData !== 'undefined' ? PortfolioData.get('heroVisual') : null;
+    // Helper to get fresh snippets dynamically from CMS Data Layer
+    const getHeroVisualData = () => {
+      const cmsHvData = typeof PortfolioData !== 'undefined' ? PortfolioData.get('heroVisual') : null;
 
-    // --- CATEGORY A: GREETING ---
-    const greetingSnippet = cmsHvData?.greeting || {
-      lang: 'GREETING.JS',
-      question: '"Welcome to my portfolio!"',
-      answer: 'Real-time developer console output & greeting statement.',
-      caption: 'Live Developer Console — Greeting',
-      lines: [
-        'console.<span class="syn-fn">log</span>(<span class="syn-str">"Hello, I\'m Akash Verma 👋"</span>);'
-      ]
+      const greeting = cmsHvData?.greeting || {
+        lang: 'GREETING.JS',
+        question: '"Welcome to my portfolio!"',
+        answer: 'Real-time developer console output & greeting statement.',
+        caption: 'Live Developer Console — Greeting',
+        lines: [
+          'console.<span class="syn-fn">log</span>(<span class="syn-str">"Hello, I\'m Akash Verma 👋"</span>);'
+        ]
+      };
+
+      const aboutMe = cmsHvData?.aboutMe || {
+        lang: 'ABOUT_ME.TS',
+        question: '"Who is Akash Verma?"',
+        answer: 'Developer working across AI/ML, Data Science, and Web Engineering.',
+        caption: 'Developer Profile Configuration',
+        lines: [
+          '<span class="syn-kw">const</span> developer <span class="syn-op">=</span> {',
+          '  name: <span class="syn-str">"Akash Verma"</span>,',
+          '  focus: <span class="syn-str">"AI/ML · Data · Web"</span>,',
+          '  location: <span class="syn-str">"Based in India"</span>,',
+          '  building: <span class="syn-str">"MOODIX"</span>',
+          '};'
+        ]
+      };
+
+      const motQuotes = cmsHvData?.motivationalQuotes
+        ? cmsHvData.motivationalQuotes.filter(q => q && q.enabled !== false).map(q => q.text)
+        : [
+          "Great things take time. Keep building.",
+          "Keep learning. Keep building. Keep growing."
+        ];
+
+      const funQuotes = cmsHvData?.funnyQuotes
+        ? cmsHvData.funnyQuotes.filter(q => q && q.enabled !== false).map(q => q.text)
+        : [
+          "It works on my machine.",
+          "I don't have bugs. I have unexpected features."
+        ];
+
+      return { greeting, aboutMe, motQuotes, funQuotes };
     };
-
-    // --- CATEGORY B: ABOUT ME ---
-    const aboutSnippet = cmsHvData?.aboutMe || {
-      lang: 'ABOUT_ME.TS',
-      question: '"Who is Akash Verma?"',
-      answer: 'Developer working across AI/ML, Data Science, and Web Engineering.',
-      caption: 'Developer Profile Configuration',
-      lines: [
-        '<span class="syn-kw">const</span> developer <span class="syn-op">=</span> {',
-        '  name: <span class="syn-str">"Akash Verma"</span>,',
-        '  focus: <span class="syn-str">"AI/ML · Data · Web"</span>,',
-        '  location: <span class="syn-str">"Based in India"</span>,',
-        '  building: <span class="syn-str">"MOODIX"</span>',
-        '};'
-      ]
-    };
-
-    // --- CATEGORY C: MOTIVATIONAL QUOTES ---
-    const motivationalQuotes = cmsHvData?.motivationalQuotes
-      ? cmsHvData.motivationalQuotes.filter(q => q.enabled !== false).map(q => q.text)
-      : [
-        "Great things take time. Keep building.",
-        "Keep learning. Keep building. Keep growing."
-      ];
-
-    // --- CATEGORY C: FUNNY DEVELOPER QUOTES ---
-    const funnyQuotes = cmsHvData?.funnyQuotes
-      ? cmsHvData.funnyQuotes.filter(q => q.enabled !== false).map(q => q.text)
-      : [
-        "It works on my machine.",
-        "I don't have bugs. I have unexpected features."
-      ];
 
     let activeTimeoutId = null;
     let isTypingActive = true;
@@ -1234,9 +1352,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Reduced motion support: render greeting static
     if (prefersReducedMotion) {
-      codeContainer.innerHTML = greetingSnippet.lines.join('\n');
-      if (captionEl) captionEl.textContent = greetingSnippet.caption;
-      if (tabLangEl) tabLangEl.textContent = greetingSnippet.lang;
+      const initialData = getHeroVisualData();
+      codeContainer.innerHTML = initialData.greeting.lines.join('\n');
+      if (captionEl) captionEl.textContent = initialData.greeting.caption;
+      if (tabLangEl) tabLangEl.textContent = initialData.greeting.lang;
     } else {
       const caret = document.createElement('span');
       caret.className = 'typing-cursor';
@@ -1339,26 +1458,28 @@ document.addEventListener('DOMContentLoaded', () => {
       // Main Sequence Loop Engine: 1 Greeting -> 1 About Me -> 2 Motivational -> 2 Funny -> Repeat
       const runMasterLoop = async () => {
         while (isTypingActive) {
+          const { greeting, aboutMe, motQuotes, funQuotes } = getHeroVisualData();
+
           // 1. GREETING (1)
-          await typeSnippet(greetingSnippet, 2400);
+          await typeSnippet(greeting, 2400);
           await clearCodeArea();
 
           // 2. ABOUT ME (1)
-          await typeSnippet(aboutSnippet, 3200);
+          await typeSnippet(aboutMe, 3200);
           await clearCodeArea();
 
-          // 3. MOTIVATIONAL QUOTES (2)
-          for (let i = 0; i < motivationalQuotes.length; i++) {
+          // 3. MOTIVATIONAL QUOTES
+          for (let i = 0; i < motQuotes.length; i++) {
             if (!isTypingActive) break;
-            const quoteSnippet = formatQuoteSnippet(motivationalQuotes[i], 'MOTIVATIONAL', i, motivationalQuotes.length);
+            const quoteSnippet = formatQuoteSnippet(motQuotes[i], 'MOTIVATIONAL', i, motQuotes.length);
             await typeSnippet(quoteSnippet, 2400);
             await clearCodeArea();
           }
 
-          // 4. FUNNY DEVELOPER QUOTES (2)
-          for (let i = 0; i < funnyQuotes.length; i++) {
+          // 4. FUNNY DEVELOPER QUOTES
+          for (let i = 0; i < funQuotes.length; i++) {
             if (!isTypingActive) break;
-            const quoteSnippet = formatQuoteSnippet(funnyQuotes[i], 'FUNNY DEVELOPER', i, funnyQuotes.length);
+            const quoteSnippet = formatQuoteSnippet(funQuotes[i], 'FUNNY DEVELOPER', i, funQuotes.length);
             await typeSnippet(quoteSnippet, 2400);
             await clearCodeArea();
           }

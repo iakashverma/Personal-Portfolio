@@ -9,6 +9,9 @@ const PortfolioData = (() => {
   const STORAGE_KEY = 'portfolio_cms_data';
   const API_ENDPOINT = '/api/data';
 
+  // Admin API secret — set by the admin dashboard for authenticated write operations
+  let adminSecret = '';
+
   // ============================================================
   // DEFAULT DATA — Single Source Fallback
   // ============================================================
@@ -212,9 +215,56 @@ const PortfolioData = (() => {
     memoryData = { ...memoryData, ...localVal };
   }
 
+  // Safe response parser helper - protects against empty bodies, HTML error pages, and non-JSON responses
+  const safeParseResponse = async (res) => {
+    let text = '';
+    try {
+      text = await res.text();
+    } catch (readErr) {
+      return {
+        ok: false,
+        status: res.status || 0,
+        data: null,
+        error: `Failed to read server response: ${readErr.message}`
+      };
+    }
+
+    if (!text || !text.trim()) {
+      return {
+        ok: res.ok,
+        status: res.status,
+        data: null,
+        error: res.ok ? null : `Server returned empty response (HTTP ${res.status})`
+      };
+    }
+
+    try {
+      const parsed = JSON.parse(text);
+      return {
+        ok: res.ok,
+        status: res.status,
+        data: parsed,
+        error: null
+      };
+    } catch (parseErr) {
+      // If the response is HTML or malformed, provide a clean error instead of a syntax crash
+      const preview = text.slice(0, 120).replace(/\s+/g, ' ');
+      return {
+        ok: false,
+        status: res.status,
+        data: null,
+        error: res.ok
+          ? `Server returned non-JSON payload: ${preview}`
+          : `Server error (HTTP ${res.status}): ${preview}`
+      };
+    }
+  };
+
   // ============================================================
   // BACKEND SYNC LAYER (CENTRAL DATABASE PERSISTENCE)
   // ============================================================
+
+  let activeProvider = 'Local Storage / In-Memory';
 
   const fetchFromBackend = async () => {
     try {
@@ -223,22 +273,25 @@ const PortfolioData = (() => {
         headers: { 'Accept': 'application/json' },
         cache: 'no-store'
       });
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.success && json.data) {
-          memoryData = json.data;
-          isDatabaseConnected = json.isDatabaseConnected !== false;
-          saveLocalStorage(memoryData);
-          isInitialized = true;
-          window.dispatchEvent(new CustomEvent('portfolioDataLoaded', { detail: memoryData }));
-          return { success: true, data: memoryData, isDatabaseConnected };
+      const parsed = await safeParseResponse(res);
+      if (parsed.ok && parsed.data && parsed.data.success && parsed.data.data) {
+        memoryData = parsed.data.data;
+        isDatabaseConnected = parsed.data.isDatabaseConnected !== false;
+        if (parsed.data.activeProvider) {
+          activeProvider = parsed.data.activeProvider;
         }
+        saveLocalStorage(memoryData);
+        isInitialized = true;
+        window.dispatchEvent(new CustomEvent('portfolioDataLoaded', { detail: memoryData }));
+        return { success: true, data: memoryData, isDatabaseConnected, activeProvider };
+      } else if (parsed.error) {
+        console.warn('PortfolioData: Backend fetch note:', parsed.error);
       }
     } catch (e) {
       console.warn('PortfolioData: Could not fetch from central backend API.', e);
     }
     isInitialized = true;
-    return { success: false, data: memoryData, isDatabaseConnected: false };
+    return { success: false, data: memoryData, isDatabaseConnected: false, activeProvider };
   };
 
   const init = () => {
@@ -253,16 +306,23 @@ const PortfolioData = (() => {
 
   const syncToBackend = async (payload) => {
     try {
-      const res = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: {
+      const headers = {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-        },
+        };
+      // Attach admin secret for authenticated write operations
+      if (adminSecret) {
+        headers['x-admin-secret'] = adminSecret;
+      }
+      const res = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers,
         body: JSON.stringify(payload)
       });
-      const json = await res.json();
-      if (res.ok && json && json.success && json.data) {
+      const parsed = await safeParseResponse(res);
+      const json = parsed.data;
+
+      if (parsed.ok && json && json.success && json.data) {
         memoryData = json.data;
         isDatabaseConnected = json.isDatabaseConnected !== false;
         saveLocalStorage(memoryData);
@@ -274,9 +334,13 @@ const PortfolioData = (() => {
           message: json.message
         };
       } else {
+        const errorMsg = (json && (json.error || json.message)) ||
+          parsed.error ||
+          (res ? `Server error (HTTP ${res.status})` : 'Failed to update backend database');
         return {
           success: false,
-          error: (json && json.error) || 'Failed to update backend database'
+          error: errorMsg,
+          isDatabaseConnected: false
         };
       }
     } catch (e) {
@@ -369,6 +433,9 @@ const PortfolioData = (() => {
     resetAllAsync,
     getDefault,
     isEdited,
-    getDbConnectedStatus
+    getDbConnectedStatus,
+    getActiveProvider: () => activeProvider,
+    setAdminSecret: (secret) => { adminSecret = secret; },
+    getAdminSecret: () => adminSecret
   };
 })();

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "_07o1nfjyf",
+    "name": "Dr. Jane Smith",
+    "email": "jane.smith@mit.edu",
+    "subject": "Research Collaboration on Anomaly Detection",
+    "message": "Hello Akash, I reviewed your Detoxa project and would like to discuss potential research collaboration.",
+    "date": "Aug 12, 2026, 02:45 PM",
+    "read": false
+  },
+  {
+    "id": "_bytltdkw7",
+    "name": "Dr. Jane Smith",
+    "email": "jane.smith@mit.edu",
+    "subject": "Research Collaboration on Anomaly Detection",
+    "message": "Hello Akash, I reviewed your Detoxa project and would like to discuss potential research collaboration.",
+    "date": "Aug 12, 2026, 02:41 PM",
+    "read": false
+  },
+  {
+    "id": "_dw7beihly",
+    "name": "Dr. Jane Smith",
+    "email": "jane.smith@mit.edu",
+    "subject": "Research Collaboration on Anomaly Detection",
+    "message": "Hello Akash, I reviewed your Detoxa project and would like to discuss potential research collaboration.",
+    "date": "Aug 12, 2026, 01:08 PM",
+    "read": false
+  },
+  {
+    "id": "_fdh28w8ur",
+    "name": "Dr. Jane Smith",
+    "email": "jane.smith@mit.edu",
+    "subject": "Research Collaboration on Anomaly Detection",
+    "message": "Hello Akash, I reviewed your Detoxa project and would like to discuss potential research collaboration.",
+    "date": "Aug 12, 2026, 01:08 PM",
+    "read": false
+  },
+  {
+    "id": "_69verw85n",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "subject": "Portfolio Inquiry",
+    "message": "Hello Akash!",
+    "date": "Aug 12, 2026, 11:39 AM",
+    "read": false
+  }
+]
