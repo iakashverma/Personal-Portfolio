@@ -38,19 +38,11 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Email and password are required' });
     }
 
-    // Server-side credential validation
-    const crypto = require('crypto');
-    const VALID_EMAIL = (process.env.ADMIN_EMAIL || 'admin@akku.com').trim().toLowerCase();
-    
-    let expectedHash = (process.env.ADMIN_PASS_HASH || '').trim().toLowerCase();
-    if (!expectedHash && process.env.ADMIN_PASSWORD) {
-      expectedHash = crypto.createHash('sha256').update(process.env.ADMIN_PASSWORD.trim()).digest('hex');
-    }
-    if (!expectedHash) {
-      expectedHash = '50cf58d2a2363ed8b4b6a27075e5667816a36811f6f2e1be012b396c15567746';
-    }
+    // Server-side credential validation: admin@akku.com / akku@121
+    const VALID_EMAIL = 'admin@akku.com';
+    const VALID_PASS_HASH = '50cf58d2a2363ed8b4b6a27075e5667816a36811f6f2e1be012b396c15567746'; // sha256 of 'akku@121'
 
-    if (email !== VALID_EMAIL || passwordHash.toLowerCase() !== expectedHash) {
+    if (email !== VALID_EMAIL || passwordHash.toLowerCase() !== VALID_PASS_HASH) {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 

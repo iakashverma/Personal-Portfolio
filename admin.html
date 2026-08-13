@@ -83,9 +83,9 @@
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       }
 
-      // Pre-computed hashes
+      // Exact credentials: admin@akku.com / akku@121
       const VALID_EMAIL = 'admin@akku.com';
-      const VALID_PASS_HASH = '50cf58d2a2363ed8b4b6a27075e5667816a36811f6f2e1be012b396c15567746'; // sha256 verified
+      const VALID_PASS_HASH = '50cf58d2a2363ed8b4b6a27075e5667816a36811f6f2e1be012b396c15567746'; // sha256 of 'akku@121'
 
       // Check if already logged in
       if (sessionStorage.getItem('admin_session') === 'authenticated') {
@@ -141,8 +141,9 @@
         submitBtn.innerHTML = '<span>Authenticating...</span> <i class="fas fa-spinner fa-spin"></i>';
 
         const passHash = await sha256(password);
+        const lowerHash = passHash.toLowerCase();
 
-        // Server-side authentication — validates credentials and returns admin API token
+        // 1. Try server-side authentication
         try {
           const authRes = await fetch('/api/auth', {
             method: 'POST',
@@ -156,7 +157,6 @@
               failedAttempts = 0;
               sessionStorage.setItem('admin_session', 'authenticated');
               sessionStorage.setItem('admin_email', email);
-              // Store admin API token for authenticated CRUD operations
               if (authData.token) {
                 sessionStorage.setItem('admin_api_token', authData.token);
               }
@@ -165,15 +165,16 @@
             }
           }
         } catch (networkErr) {
-          // If server auth is unavailable, fall back to client-side validation
-          console.warn('Server auth unavailable, using client-side validation:', networkErr.message);
-          if (email === VALID_EMAIL && passHash === VALID_PASS_HASH) {
-            failedAttempts = 0;
-            sessionStorage.setItem('admin_session', 'authenticated');
-            sessionStorage.setItem('admin_email', email);
-            window.location.href = 'admin-dashboard.html';
-            return;
-          }
+          console.warn('Server auth endpoint unreachable:', networkErr.message);
+        }
+
+        // 2. Client-side validation fallback
+        if (email === VALID_EMAIL && lowerHash === VALID_PASS_HASH) {
+          failedAttempts = 0;
+          sessionStorage.setItem('admin_session', 'authenticated');
+          sessionStorage.setItem('admin_email', email);
+          window.location.href = 'admin-dashboard.html';
+          return;
         }
 
         // Authentication failed
