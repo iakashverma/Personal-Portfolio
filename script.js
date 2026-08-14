@@ -127,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initIntroScreen();
 
   // ==========================================
-  // ==========================================
   // 1. GALLERY DATASET & LIGHTBOX MODAL
   // ==========================================
   const lightboxModal = document.getElementById('gallery-lightbox');
@@ -154,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentZoom = 1.0;
   const MIN_ZOOM = 0.50; // 50% minimum zoom
   const MAX_ZOOM = 3.00; // 300% maximum zoom
-  const ZOOM_STEP = 0.02; // Exact 2% increment per click
+  const ZOOM_STEP = 0.02; // Exact 2% increment per click (+2 / -2)
 
   const applyZoom = (zoom) => {
     // Round to clean 2 decimal places (e.g. 0.98, 1.00, 1.02, 1.04)
@@ -1900,6 +1899,10 @@ document.addEventListener('DOMContentLoaded', () => {
       codeContainer.innerHTML = initialData.aboutMe.lines.join('\n');
       if (captionEl) captionEl.textContent = initialData.aboutMe.caption;
       if (tabLangEl) tabLangEl.textContent = initialData.aboutMe.lang;
+      const visualQ = document.querySelector('.visual-q');
+      const visualA = document.querySelector('.visual-a');
+      if (visualQ) visualQ.textContent = initialData.aboutMe.question;
+      if (visualA) visualA.textContent = initialData.aboutMe.answer;
     } else {
       const caret = document.createElement('span');
       caret.className = 'typing-cursor';

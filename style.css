@@ -1628,6 +1628,27 @@ body.cursor-ready .cursor-ring {
   flex-direction: column;
   gap: 8px;
   padding-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.4);
+  -webkit-overflow-scrolling: touch;
+}
+
+.heatmap-grid-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.heatmap-grid-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+}
+
+.heatmap-grid-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.heatmap-grid-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 /* Months Header Row */
@@ -2931,6 +2952,29 @@ body.cursor-ready .cursor-ring {
   }
 }
 
+@media (min-width: 901px) and (max-width: 1120px) {
+  .command-tab {
+    gap: 4px;
+    padding: 0 6px;
+  }
+
+  .command-item {
+    padding: 6px 8px;
+    font-size: 11.5px;
+    gap: 4px;
+  }
+
+  .logo.command-item {
+    font-size: 12px;
+    padding-left: 6px;
+    letter-spacing: 0.1em;
+  }
+
+  .primary-nav ul {
+    gap: 1px;
+  }
+}
+
 @media (max-width: 900px) {
 
   .primary-nav,
@@ -3080,10 +3124,6 @@ body.cursor-ready .cursor-ring {
   .presence-github-stats {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
-  }
-
-  .gallery-img-container {
-    height: 220px;
   }
 
   .cursor-dot,
@@ -3238,12 +3278,14 @@ body.cursor-ready .cursor-ring {
   z-index: 10;
 }
 
-.cert-card:hover .cert-card-hover-preview,
-.cert-card:focus-within .cert-card-hover-preview {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: scale(1);
+@media (hover: hover) and (pointer: fine) {
+  .cert-card:hover .cert-card-hover-preview,
+  .cert-card:focus-within .cert-card-hover-preview {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: scale(1);
+  }
 }
 
 .cert-hover-preview-media {
@@ -3374,12 +3416,14 @@ body.cursor-ready .cursor-ring {
   z-index: 10;
 }
 
-.project-card:hover .project-card-hover-preview,
-.project-card:focus-within .project-card-hover-preview {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: scale(1);
+@media (hover: hover) and (pointer: fine) {
+  .project-card:hover .project-card-hover-preview,
+  .project-card:focus-within .project-card-hover-preview {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: scale(1);
+  }
 }
 
 .project-hover-preview-media {
