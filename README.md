@@ -1,318 +1,55 @@
-<!-- Akash Verma — Personal Portfolio -->
+# 🚀 Akash Verma — Personal Portfolio & CMS
 
-A modern, responsive personal portfolio website for **Akash Verma**, focused on AI/ML, Data, and Web Development.
+[![Live Portfolio](https://img.shields.io/badge/Portfolio-Live-10b981?style=for-the-badge&logo=vercel&logoColor=white)](https://iakashverma.vercel.app)
 
-The portfolio is designed to present professional information, technical skills, education, certifications, projects, developer profiles, gallery content, and contact information through a clean and premium user experience.
+This is my personal portfolio — a place to bring together everything I've built, learned, and worked on as I've grown as a full-stack and AI/ML engineer. I wanted something that felt less like a static resume and more like an actual space that reflects how I think and build: clean, fast, a little cinematic, and built without leaning on heavy frameworks just because everyone else does.
 
-## ✨ Features
+## Why I built it
 
-- Modern responsive portfolio UI
-- Hero section with interactive visual preview
-- Real-time code typing animation
-- Cursor-follow 3D tilt interaction
-- About section
-- Skills section
-- Education section
-- Certifications section
-- Projects section
-- Ongoing projects
-- Developer Presence section
-- GitHub activity/contribution visualization
-- Gallery
-- Contact section with interactive map
-- Premium responsive footer
-- Back-to-top control
-- Social/profile links
-- Admin Portal / CMS
-- Admin authentication
-- CRUD management for portfolio content
-- Centralized content management
-- API-driven developer statistics where supported
-- Loading and error states for dynamic data
-- Responsive desktop, tablet, and mobile layouts
+Most portfolios feel the same — a template with a headshot, a project grid, and a contact form. I wanted mine to feel handcrafted. Every animation, every layout choice, every detail here was built from scratch in plain HTML, CSS, and JavaScript, because I wanted full control over how it looks and feels, and because I genuinely enjoy building things at that level.
 
-## 🛠️ Technology Stack
+It's also meant to be a living document. My work changes constantly — new projects, new certifications, new stats — so I built a CMS behind the scenes that lets me update everything instantly, from anywhere, without ever touching code or redeploying.
 
-### Frontend
+## The look and feel
 
-- HTML5
-- CSS3
-- Vanilla JavaScript
+The whole site follows a dark, minimal, technical aesthetic — near-black backgrounds, subtle glass-like panels, a signature green accent, and monospace type that nods to the developer world I live in. It opens with a short multilingual greeting sequence (English, Hindi, Punjabi, Bengali, Gujarati, Urdu, Sanskrit) before easing into a hero section with a live typing effect that simulates code being written in real time.
 
-The frontend is intentionally lightweight and does not require a frontend framework such as React, Vue, Angular, or Next.js.
+Small touches — a 3D tilt on the hero card, subtle parallax, smooth scroll-triggered reveals — are there to make the site feel alive without getting in the way of the content.
 
-### Dynamic Data / Backend
+## What's inside
 
-The Admin Portal requires the project's existing backend/data layer for secure authentication and persistent CRUD operations.
+- **About & Education** — a quick narrative of who I am, followed by a timeline of my academic journey from school through my MCA at Lovely Professional University.
+- **Skills** — my technical stack laid out by category: programming, web development, AI/ML, data science, databases, and infrastructure tools.
+- **Certifications & Projects** — verified credentials from places like Stanford Online, DeepLearning.AI, IBM, and Meta, alongside flagship projects like Detoxa, Moodix, SignalStack, and LedgerLine. Everything sorts itself chronologically, and hovering over a card gives you a quick preview.
+- **Developer Presence** — live stats pulled from GitHub, LeetCode, GeeksforGeeks, HackerRank, LinkedIn, and Instagram, including a GitHub-style contribution heatmap.
+- **Gallery** — photos from hackathons, presentations, lab work, and campus life, with a full lightbox experience for browsing through them.
+- **Contact** — a simple way to reach out, with messages landing directly in an inbox I can check from the admin panel.
 
-Real-time developer statistics are kept separate from CMS-controlled portfolio content and are fetched from supported APIs where available.
+## The CMS
 
-## 📁 Main Portfolio Sections
+Behind the public site is a private admin dashboard where I can manage every section — hero content, projects, skills, certifications, gallery images, even raw code snippets for the hero visual — all through a clean interface instead of editing files by hand. It also handles things like converting certificate PDFs into images automatically, so adding a new credential takes seconds.
 
-### Hero
-Introduces Akash Verma with an interactive developer-focused visual preview.
+Updates made here sync instantly across every device and every visitor, thanks to a cloud-backed data layer running underneath.
 
-### About
-Provides a concise professional introduction and background.
+## Built with
 
-### Skills
-Displays technical skills and areas of expertise.
+HTML5, CSS3, and vanilla JavaScript on the frontend — no frameworks. Node.js and serverless functions power the backend, with cloud storage (Redis, Supabase, GitHub Gists, or JSONBin, depending on setup) keeping everything in sync. Hosted on Vercel.
 
-### Education
-Presents educational qualifications in the portfolio's existing card layout.
+This project is as much a showcase of what I've built as it is a project in itself — proof that you don't need a framework to build something fast, expressive, and genuinely personal.
 
-### Certifications
-Displays certifications, issuing organizations, dates, verification links, and related information.
 
-### Projects
-Showcases completed projects, technologies, descriptions, and relevant project links.
+## 👤 Author & License
 
-### Ongoing Projects
-Highlights projects currently under development.
-
-### My Developer Presence
-Connects professional and coding profiles such as GitHub, LeetCode, HackerRank, GeeksforGeeks, LinkedIn, and other supported platforms.
-
-Where official/public APIs are available, genuine statistics can be displayed dynamically. When live data is unavailable, the UI should use an appropriately labeled fallback rather than presenting fabricated statistics as real-time data.
-
-### Gallery
-Displays portfolio images without unnecessarily exposing raw image filenames.
-
-### Contact
-Provides contact information, a contact form, and an interactive map/location.
-
-### Footer
-Contains portfolio navigation, social links, copyright information, and Admin access.
-
-## 🧑‍💻 Hero Visual Preview
-
-The Hero Visual Preview contains only the intended dynamic content:
-
-1. Greeting
-2. About Me
-3. Two motivational quotes
-4. Two funny developer quotes
-
-Current profile information:
-
-- **Name:** Akash Verma
-- **Focus:** AI/ML · Data · Web
-- **Location:** Based in India
-- **Currently building:** MOODIX
-
-The preview supports a live typing effect, blinking cursor, automatic content cycling, syntax highlighting, and cursor-based interaction.
-
-## 🔐 Admin Portal
-
-The Admin Portal acts as the central content-management system for the portfolio.
-
-The administrator can manage editable portfolio content without manually modifying the public website source code.
-
-### Admin capabilities
-
-- Login/logout
-- Dashboard
-- View content
-- Add content
-- Edit content
-- Delete content
-- Reorder content where supported
-- Enable/disable sections or items
-- Manage images
-- Manage project information
-- Manage education
-- Manage certifications
-- Manage skills
-- Manage gallery
-- Manage contact information
-- Manage footer content
-- Manage Hero Visual Preview content
-
-### Important CMS principle
-
-The Admin Portal controls **content**, not the visual design.
-
-The existing portfolio UI remains controlled by the HTML/CSS/JavaScript implementation.
-
-This prevents content changes from accidentally changing:
-
-- Card dimensions
-- Colors
-- Typography
-- Layout
-- Borders
-- Shadows
-- Animations
-- Responsive breakpoints
-
-## 🔄 Data Flow
-
-CMS-controlled content follows:
-
-```text
-Admin Portal
-     ↓
-Persistent Data Source
-     ↓
-Main Portfolio
-```
-
-Real-time platform statistics follow:
-
-```text
-External Platform API
-     ↓
-Developer Presence
-     ↓
-Main Portfolio
-```
-
-The interactive map remains powered by its required map implementation/service.
-
-## 🎨 Design Principles
-
-The public website and Admin Portal follow the same visual identity.
-
-The design emphasizes:
-
-- Premium appearance
-- Clean layouts
-- Consistent spacing
-- Responsive design
-- Subtle interactions
-- Clear typography
-- Consistent cards and components
-- Minimal unnecessary decoration
-
-The Admin Portal should feel like a natural extension of the main website rather than a completely unrelated dashboard.
-
-## 📱 Responsive Design
-
-The website is designed for:
-
-- Desktop
-- Laptop
-- Tablet
-- Mobile
-- Small mobile screens
-
-Interactive effects such as cursor-based 3D interactions should be simplified or disabled on touch devices and should respect reduced-motion preferences.
-
-## ⚙️ Setup
-
-Because the portfolio uses HTML, CSS, and Vanilla JavaScript, the frontend can be served using a standard static web server.
-
-Example:
-
-```bash
-git clone <repository-url>
-cd <project-directory>
-```
-
-Then open the project through a local development server.
-
-For example, using VS Code Live Server or another local HTTP server.
-
-## 🌐 Central Cloud Persistence & Multi-Device Synchronization
-
-To ensure that edits made in the Admin Portal persist to a central production data store and are reflected consistently across **every device and browser worldwide**, the backend supports multiple cloud database adapters with automatic failover:
-
-| Provider | Supported Environment Variables | Description |
-| :--- | :--- | :--- |
-| **Vercel KV / Upstash Redis** *(Recommended)* | `KV_REST_API_URL`<br>`KV_REST_API_TOKEN` | 1-Click setup via Vercel Dashboard &rarr; Storage &rarr; Create KV Database. |
-| **GitHub Gist Sync** *(Zero extra DB)* | `GITHUB_GIST_ID`<br>`GITHUB_TOKEN` | Automatically reads and writes `portfolio_data.json` directly to a GitHub Gist. |
-| **Supabase REST** | `SUPABASE_URL`<br>`SUPABASE_SERVICE_ROLE_KEY` | Connects to a Supabase Postgres key-value table. |
-| **JSONBin.io** | `JSONBIN_BIN_ID`<br>`JSONBIN_API_KEY` | Cloud JSON document store. |
-| **Local Disk** | *(Automatic during local dev)* | Saves to `.data/portfolio_data.json` during `node server.js` testing. |
-
-### How Multi-Device Consistency Works
-1. When you save changes in the Admin Portal, a request is sent to `/api/data`.
-2. The serverless API updates the configured central cloud database (Upstash Redis, Supabase, GitHub Gist, etc.).
-3. When any device or browser loads or updates the portfolio, `PortfolioData.init()` fetches the latest state from `/api/data` with cache-busting headers (`no-store`), ensuring zero stale-cache lag and seamless global reflection.
-
-## 🔑 Environment & Security
-
-Never commit:
-
-- Admin passwords
-- API keys
-- Access tokens
-- Database credentials
-- Private environment variables
-
-Authentication credentials must be securely stored and passwords must be hashed when handled by a backend.
-
-Frontend code must never expose private API credentials.
-
-## 🧪 Testing Checklist
-
-Before deployment, verify:
-
-- [ ] Admin login works
-- [ ] Unauthorized users cannot access protected admin functionality
-- [ ] Admin logout works
-- [ ] Create operation works
-- [ ] Read operation works
-- [ ] Update operation works
-- [ ] Delete operation works
-- [ ] Changes persist after refresh
-- [ ] Admin changes appear on the main portfolio
-- [ ] API-driven statistics continue working
-- [ ] GitHub activity renders correctly
-- [ ] Map works correctly
-- [ ] Hero typing animation works
-- [ ] Hero tilt interaction works
-- [ ] Gallery works
-- [ ] Contact section works
-- [ ] Footer works
-- [ ] No console errors
-- [ ] No broken links
-- [ ] No missing assets
-- [ ] No horizontal overflow
-- [ ] Mobile layout works correctly
-- [ ] Reduced-motion behavior works correctly
-
-## 🚀 Deployment
-
-The frontend can be deployed on any platform capable of serving static HTML/CSS/JavaScript.
-
-If the Admin Portal uses a backend/database, deploy the backend separately or through the same hosting platform according to the project's architecture.
-
-Before production deployment:
-
-1. Configure production environment variables.
-2. Secure the Admin authentication system.
-3. Verify database connectivity.
-4. Verify API integrations.
-5. Test all CRUD operations.
-6. Test the public website after Admin updates.
-7. Remove development/debugging credentials and logs.
-
-## 📌 Project Goals
-
-The portfolio is intended to:
-
-- Showcase technical expertise
-- Present projects and achievements
-- Provide professional and coding profiles
-- Demonstrate AI/ML, Data, and Web interests
-- Provide an easy way to connect
-- Provide a maintainable Admin CMS for portfolio updates
-
-## 👤 Author
-
+### Author
 **Akash Verma**
+- **Focus**: AI/ML · Data Science · Full-Stack Web Development
+- **Education**: Master of Computer Applications (MCA), Lovely Professional University
+- **GitHub**: [@iakashverma](https://github.com/iakashverma)
+- **LinkedIn**: [Akash Verma](https://linkedin.com/in/iakashverma00)
+- **Email**: [iakashverma00@gmail.com](mailto:iakashverma00@gmail.com)
 
-AI/ML · Data · Web
+### License
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
-Based in India
 
-Currently building **MOODIX**.
-
-## 📄 License
-
-Add the project's preferred license here if the repository is intended to be publicly distributed.
-
----
-
-Built with HTML, CSS, and Vanilla JavaScript.
+*Crafted with 💖 by Akash Verma.*
