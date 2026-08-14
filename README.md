@@ -37,6 +37,7 @@ HTML5, CSS3, and vanilla JavaScript on the frontend — no frameworks. Node.js a
 
 This project is as much a showcase of what I've built as it is a project in itself — proof that you don't need a framework to build something fast, expressive, and genuinely personal.
 
+---
 
 ## 👤 Author & License
 
@@ -51,5 +52,6 @@ This project is as much a showcase of what I've built as it is a project in itse
 ### License
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
+---
 
 *Crafted with 💖 by Akash Verma.*
