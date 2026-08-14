@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// Default portfolio data object — Single Source Fallback
 const defaults = {
   hero: {
     badge: 'Open to work · Full-time & freelance',
@@ -247,10 +246,8 @@ const defaults = {
   }
 };
 
-// In-memory cache per serverless invocation
 let memoryData = null;
 
-// Local File System Helper (for local npm run dev testing)
 const getDataFilePath = () => {
   const dataDir = path.join(process.cwd(), '.data');
   if (!fs.existsSync(dataDir)) {
@@ -259,7 +256,6 @@ const getDataFilePath = () => {
   return path.join(dataDir, 'portfolio_data.json');
 };
 
-// 1. Upstash Redis / Vercel KV REST API Adapter
 const loadFromKV = async (key = 'portfolio_cms_data') => {
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -307,7 +303,6 @@ const saveToKV = async (key = 'portfolio_cms_data', data) => {
   return false;
 };
 
-// 2. Supabase REST API Adapter
 const loadFromSupabase = async (key = 'portfolio_cms_data') => {
   const url = process.env.SUPABASE_URL;
   const keyToken = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
@@ -366,7 +361,6 @@ const saveToSupabase = async (key = 'portfolio_cms_data', data) => {
   return false;
 };
 
-// 3. GitHub Gist REST API Adapter
 const loadFromGist = async (filename = 'portfolio_data.json') => {
   const gistId = process.env.GITHUB_GIST_ID;
   const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.PORTFOLIO_GITHUB_TOKEN;
@@ -422,7 +416,6 @@ const saveToGist = async (filename = 'portfolio_data.json', data) => {
   return false;
 };
 
-// 4. JSONBin.io REST API Adapter
 const loadFromJSONBin = async () => {
   const binId = process.env.JSONBIN_BIN_ID;
   const apiKey = process.env.JSONBIN_API_KEY || process.env.JSONBIN_ACCESS_KEY;
@@ -468,28 +461,21 @@ const saveToJSONBin = async (data) => {
   return false;
 };
 
-// Primary Storage Reader
 const readStorage = async () => {
-  // 1. Try Upstash Redis / Vercel KV
   const kvData = await loadFromKV('portfolio_cms_data');
   if (kvData) return { data: kvData, provider: 'Upstash / Vercel KV' };
 
-  // 2. Try Supabase
   const supaData = await loadFromSupabase('portfolio_cms_data');
   if (supaData) return { data: supaData, provider: 'Supabase' };
 
-  // 3. Try GitHub Gist
   const gistData = await loadFromGist('portfolio_data.json');
   if (gistData) return { data: gistData, provider: 'GitHub Gist' };
 
-  // 4. Try JSONBin.io
   const binData = await loadFromJSONBin();
   if (binData) return { data: binData, provider: 'JSONBin.io' };
 
-  // 5. Try In-memory cache per active serverless instance
   if (memoryData) return { data: memoryData, provider: 'Memory' };
 
-  // 6. Try Local File System
   const filePath = getDataFilePath();
   if (fs.existsSync(filePath)) {
     try {
@@ -501,49 +487,41 @@ const readStorage = async () => {
     } catch (e) {}
   }
 
-  // 7. Fallback to hardcoded defaults
   memoryData = JSON.parse(JSON.stringify(defaults));
   return { data: memoryData, provider: 'Defaults' };
 };
 
-// Primary Storage Writer
 const writeStorage = async (data) => {
   memoryData = data;
   let savedToDatabase = false;
 
-  // 1. Upstash / KV
   if (await saveToKV('portfolio_cms_data', data)) {
     savedToDatabase = true;
   }
 
-  // 2. Supabase
   if (await saveToSupabase('portfolio_cms_data', data)) {
     savedToDatabase = true;
   }
 
-  // 3. GitHub Gist
   if (await saveToGist('portfolio_data.json', data)) {
     savedToDatabase = true;
   }
 
-  // 4. JSONBin.io
   if (await saveToJSONBin(data)) {
     savedToDatabase = true;
   }
 
-  // 5. Local disk (works during local dev testing)
   try {
     const filePath = getDataFilePath();
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
     if (!savedToDatabase && process.env.VERCEL !== '1') {
-      savedToDatabase = true; // Local development disk write
+      savedToDatabase = true;
     }
   } catch (e) {}
 
   return savedToDatabase;
 };
 
-// Identify active persistent provider name
 const getActiveProvider = () => {
   if (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL) return 'Upstash / Vercel KV';
   if (process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)) return 'Supabase';
@@ -553,30 +531,24 @@ const getActiveProvider = () => {
   return 'None (Cloud Database Setup Required in Vercel)';
 };
 
-// Check if persistent database service is configured in Vercel env
 const isDatabaseConfigured = () => {
   const hasKV = !!(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL);
   const hasSupa = !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY));
   const hasGist = !!(process.env.GITHUB_GIST_ID && (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.PORTFOLIO_GITHUB_TOKEN));
   const hasJSONBin = !!(process.env.JSONBIN_BIN_ID && (process.env.JSONBIN_API_KEY || process.env.JSONBIN_ACCESS_KEY));
-  // Local disk is NOT a real persistent database on Vercel (ephemeral filesystem)
   const isLocalDev = process.env.VERCEL !== '1';
   return hasKV || hasSupa || hasGist || hasJSONBin || isLocalDev;
 };
 
-// Admin authentication check — validates ADMIN_API_SECRET header
 const isAdminAuthenticated = (req) => {
   const secret = process.env.ADMIN_API_SECRET;
-  // If no secret is configured, allow writes (backward-compatible for local dev)
   if (!secret) return true;
   const provided = (req.headers && (req.headers['x-admin-secret'] || req.headers['authorization'])) || '';
-  // Support both "x-admin-secret: <token>" and "Bearer <token>"
   const token = provided.startsWith('Bearer ') ? provided.slice(7) : provided;
   return token === secret;
 };
 
 module.exports = async (req, res) => {
-  // Prevent any browser or CDN caching on API response
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
   res.setHeader('Pragma', 'no-cache');
@@ -609,7 +581,6 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'POST' || req.method === 'PUT') {
-      // Authenticate admin for write operations
       if (!isAdminAuthenticated(req)) {
         return res.status(401).json({ success: false, error: 'Unauthorized — invalid or missing admin secret' });
       }
@@ -681,7 +652,6 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'DELETE') {
-      // Authenticate admin for delete operations
       if (!isAdminAuthenticated(req)) {
         return res.status(401).json({ success: false, error: 'Unauthorized — invalid or missing admin secret' });
       }

@@ -1,22 +1,12 @@
-/**
- * AKASH VERMA — PORTFOLIO SCRIPT
- * Handles header scroll state, scroll reveal observer, active navigation highlighting,
- * mobile menu toggle, keyboard shortcuts (1-8 & Esc), custom cursor, gallery rendering,
- * lightbox modal interactions, and contact form validation.
- */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // HTML escape helper for defense-in-depth on CMS-rendered content
   const escHTML = (str) => {
     if (str === null || str === undefined) return '';
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   };
 
 
-  // ==========================================
-  // 0. PORTFOLIO INTRO GREETING SEQUENCE (Premium 3s Developer Sequence)
-  // ==========================================
   const initIntroScreen = () => {
     const introScreen = document.getElementById('intro-screen');
     const introText = document.getElementById('intro-text');
@@ -39,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.body.classList.add('intro-active');
 
-    // Progress Line & Counter Animation (0% to 100% over ~2.4s)
     if (progressFill) {
       requestAnimationFrame(() => {
         progressFill.style.width = '100%';
@@ -58,11 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, 55);
 
-    // Fast-paced calibrated durations (ms) completing within 3s total:
-    // Greetings 0-6: 150ms each (1050ms)
-    // Greeting 7 ("Welcome"): 220ms (1270ms)
-    // Greeting 8 ("Let’s build something together."): 900ms (2170ms)
-    // Exit aperture transition: 400ms -> Total = ~2.6s - 2.8s
     const stepDurations = [150, 150, 150, 150, 150, 150, 150, 220, 900];
     const scrambleChars = '!/[]<>_{}—=+*^#01';
 
@@ -74,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (glowEl) glowEl.style.opacity = '1';
       }
 
-      // Quick 1-frame micro-decoder flicker for developer aesthetic
       const len = targetText.length;
       let scrambled = '';
       for (let i = 0; i < Math.min(len, 8); i++) {
@@ -92,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const nextGreeting = () => {
       if (current >= greetings.length) {
-        // Complete intro sequence smoothly with scale aperture blur
         introScreen.classList.add('is-hidden');
         document.body.classList.remove('intro-active');
         setTimeout(() => {
@@ -126,9 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initIntroScreen();
 
-  // ==========================================
-  // 1. GALLERY DATASET & LIGHTBOX MODAL
-  // ==========================================
   const lightboxModal = document.getElementById('gallery-lightbox');
   const lightboxClose = document.getElementById('lightbox-close');
   const lightboxImg = document.getElementById('lightbox-img');
@@ -151,12 +130,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentLightboxIndex = 0;
   let currentLightboxMeta = {};
   let currentZoom = 1.0;
-  const MIN_ZOOM = 0.50; // 50% minimum zoom
-  const MAX_ZOOM = 3.00; // 300% maximum zoom
-  const ZOOM_STEP = 0.02; // Exact 2% increment per click (+2 / -2)
+  const MIN_ZOOM = 0.50;
+  const MAX_ZOOM = 3.00;
+  const ZOOM_STEP = 0.02;
 
   const applyZoom = (zoom) => {
-    // Round to clean 2 decimal places (e.g. 0.98, 1.00, 1.02, 1.04)
     const rounded = Math.round(zoom * 100) / 100;
     currentZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, rounded));
 
@@ -207,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const total = currentLightboxItems.length;
 
-    // Counter display (e.g. 1/2)
     if (lightboxCounter) {
       if (total > 1) {
         lightboxCounter.textContent = `${currentLightboxIndex + 1}/${total}`;
@@ -217,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Navigation buttons display
     if (lightboxPrev) {
       lightboxPrev.style.display = total > 1 ? 'flex' : 'none';
     }
@@ -225,7 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
       lightboxNext.style.display = total > 1 ? 'flex' : 'none';
     }
 
-    // Render media (image or video)
     const isVideo = currentItem.type === 'video' || (typeof currentItem.src === 'string' && currentItem.src.toLowerCase().endsWith('.mp4'));
     if (isVideo) {
       if (lightboxImg) lightboxImg.style.display = 'none';
@@ -268,7 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const openLightbox = (payload) => {
     if (!lightboxModal || !payload) return;
 
-    // Normalize payload to items array
     if (Array.isArray(payload.items) && payload.items.length) {
       currentLightboxItems = payload.items;
       currentLightboxIndex = payload.initialIndex || 0;
@@ -391,7 +365,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Keyboard navigation for lightbox
   document.addEventListener('keydown', (e) => {
     if (!lightboxModal || !lightboxModal.classList.contains('is-open')) return;
     if (e.key === 'Escape') {
@@ -412,7 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // --- Resume Lightbox Viewer Trigger ---
   const handleOpenResumeLightbox = (e) => {
     if (e) {
       e.preventDefault();
@@ -462,9 +434,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   bindResumeButtons();
 
-  // ==========================================
-  // 1.5. DYNAMIC CMS CONTENT RENDERER
-  // ==========================================
   const renderGalleryGrid = (items) => {
     const galleryGrid = document.getElementById('gallery-grid');
     if (!galleryGrid) return;
@@ -504,18 +473,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const s = dateStr.trim();
     if (!s) return 0;
 
-    // 1. If contains 'present' or 'current', prioritize it as the newest/most recent
     if (/present|current|now/i.test(s)) {
       return 9999999999999;
     }
 
-    // 2. Try standard Date.parse
     const parsed = Date.parse(s);
     if (!isNaN(parsed)) {
       return parsed;
     }
 
-    // 3. Extract all 4-digit years (e.g. 2026, 2025, 2024, 2023)
     const years = s.match(/\b(19\d\d|20\d\d)\b/g);
     if (years && years.length > 0) {
       const maxYear = Math.max(...years.map(y => parseInt(y, 10)));
@@ -539,7 +505,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = PortfolioData.getAll();
       if (!data) return;
 
-      // --- Hero ---
       if (data.hero) {
         const heroBadge = document.querySelector('.hero-badge');
         if (heroBadge && data.hero.badge) {
@@ -573,7 +538,6 @@ document.addEventListener('DOMContentLoaded', () => {
         bindResumeButtons();
       }
 
-      // --- About ---
       if (data.about) {
         const aboutTitle = document.querySelector('#about .card-section-title');
         if (aboutTitle && data.about.title) aboutTitle.textContent = data.about.title;
@@ -603,7 +567,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // --- Projects (Date Sorted Descending, Max 6 Initial + Show More toggle) ---
       if (data.projects) {
         const projTitle = document.querySelector('#fieldlog .card-section-title');
         if (projTitle && data.projects.title) projTitle.textContent = data.projects.title;
@@ -615,7 +578,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (projectsGrid && data.projects.items && projectsContainer) {
           const enabledProjects = data.projects.items.filter(p => p.enabled !== false);
 
-          // Dynamic Chronological Sorting: Latest/Newest Date First (2026 -> 2025 -> 2024 -> 2023)
           const sortedProjects = [...enabledProjects].sort((a, b) => {
             const dateStrA = a.date || a.year || a.completedDate || (a.description?.match(/\b(19\d\d|20\d\d)\b/)?.[0]) || '';
             const dateStrB = b.date || b.year || b.completedDate || (b.description?.match(/\b(19\d\d|20\d\d)\b/)?.[0]) || '';
@@ -626,7 +588,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (sortedProjects.length) {
             projectsGrid.innerHTML = sortedProjects.map((p, index) => {
-              // Extract media items: all images first, then video as the final slide
               const images = Array.isArray(p.images) ? p.images : [];
               const hasVideo = Boolean(p.video && String(p.video).trim());
               const mediaSlides = [
@@ -636,12 +597,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
               const mainMedia = mediaSlides[0] || (p.imageUrl ? { type: 'image', src: p.imageUrl } : { type: 'image', src: 'images/gallery_workspace.png' });
 
-              // Extract domain categories & tech stack
               const rawDomains = Array.isArray(p.domains) && p.domains.length ? p.domains : (p.domain ? [p.domain] : []);
               const domains = [...new Set(rawDomains.map(d => d === 'Web' ? 'Web Development' : d).filter(Boolean))];
               const techStack = Array.isArray(p.techStack) && p.techStack.length ? p.techStack : (Array.isArray(p.tags) ? p.tags : []);
 
-              // Action buttons verification
               const hasGithub = p.githubUrl && String(p.githubUrl).trim() && p.githubUrl !== '#';
               const hasDemo = p.demoUrl && String(p.demoUrl).trim() && p.demoUrl !== '#';
 
@@ -687,15 +646,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${domains.map(d => `<span class="btn-project-pill project-domain-pill"><i class="fas fa-tag"></i> ${escHTML(d)}</span>`).join('')}
                   </div>
 
-                  <!-- Hover Image Preview (visible only on card hover) -->
-                  <div class="project-card-hover-preview">
+                                    <div class="project-card-hover-preview">
                     ${hoverMediaContent}
                   </div>
                 </article>
               `;
             }).join('');
 
-            // Bind click events on the entire Project card to open Lightbox Image/Video Modal
             const handleOpenProjectLightbox = (projIndex) => {
               const proj = sortedProjects[projIndex];
               if (!proj) return;
@@ -725,7 +682,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             projectsGrid.querySelectorAll('.project-card').forEach(card => {
               const openHandler = (e) => {
-                // If clicking an external link, do not open lightbox
                 if (e.target.closest('a')) return;
                 const idx = parseInt(card.getAttribute('data-project-index'), 10);
                 handleOpenProjectLightbox(idx);
@@ -741,7 +697,6 @@ document.addEventListener('DOMContentLoaded', () => {
               });
             });
 
-            // Show More / Show Less Toggle (only displayed when more than 6 items exist)
             const oldProjectToggle = projectsContainer.querySelector('.section-toggle-wrapper[data-for="projects"]');
             if (oldProjectToggle) oldProjectToggle.remove();
 
@@ -774,7 +729,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // --- Skills ---
       if (data.skills) {
         const skillsTitle = document.querySelector('#stack .card-section-title');
         if (skillsTitle && data.skills.title) skillsTitle.textContent = data.skills.title;
@@ -800,7 +754,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // --- Education ---
       if (data.education) {
         const eduTitle = document.querySelector('#education .card-section-title');
         if (eduTitle && data.education.title) eduTitle.textContent = data.education.title;
@@ -836,7 +789,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // --- Certifications (Date Sorted Descending, Max 6 Initial + Show More toggle) ---
       if (data.certifications) {
         const certTitle = document.querySelector('#certifications .card-section-title');
         if (certTitle && data.certifications.title) certTitle.textContent = data.certifications.title;
@@ -848,7 +800,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (certsGrid && data.certifications.items && certsContainer) {
           const enabledCerts = data.certifications.items.filter(c => c.enabled !== false);
 
-          // Dynamic Chronological Sorting: Latest/Newest Date First (2026 -> 2025 -> 2024 -> 2023)
           const sortedCerts = [...enabledCerts].sort((a, b) => {
             const dateStrA = a.issueDate || a.date || a.year || (a.credentialId?.match(/\b(19\d\d|20\d\d)\b/)?.[0]) || '';
             const dateStrB = b.issueDate || b.date || b.year || (b.credentialId?.match(/\b(19\d\d|20\d\d)\b/)?.[0]) || '';
@@ -880,8 +831,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                   <p class="feature-card-desc">${escHTML(c.description)}</p>
 
-                  <!-- Hover Image Preview (visible only on card hover) -->
-                  <div class="cert-card-hover-preview">
+                                    <div class="cert-card-hover-preview">
                     <div class="cert-hover-preview-media">
                       <img src="${escHTML(imgSource)}" alt="${escHTML(c.title)}" loading="lazy">
                       <div class="cert-hover-preview-badge">
@@ -893,7 +843,6 @@ document.addEventListener('DOMContentLoaded', () => {
               `;
             }).join('');
 
-            // Bind click events on the entire Certificate card to open Lightbox Image Modal
             const handleOpenCertLightbox = (certIndex) => {
               const cert = sortedCerts[certIndex];
               if (!cert) return;
@@ -923,7 +872,6 @@ document.addEventListener('DOMContentLoaded', () => {
               });
             });
 
-            // Show More / Show Less Toggle (only displayed when more than 6 items exist)
             const oldCertToggle = certsContainer.querySelector('.section-toggle-wrapper[data-for="certifications"]');
             if (oldCertToggle) oldCertToggle.remove();
 
@@ -956,7 +904,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // --- Presence ---
       if (data.presence) {
         const presTitle = document.querySelector('#presence .card-section-title');
         if (presTitle && data.presence.title) presTitle.textContent = data.presence.title;
@@ -986,7 +933,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // --- Gallery ---
       if (data.gallery) {
         const galTitle = document.querySelector('#gallery .card-section-title');
         if (galTitle && data.gallery.title) galTitle.textContent = data.gallery.title;
@@ -997,7 +943,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGalleryGrid(galleryItems);
       }
 
-      // --- Social Icons & Links Resolver ---
       const getPlatformIcon = (platformName, url, customIcon) => {
         const name = (platformName || '').toLowerCase();
         const link = (url || '').toLowerCase();
@@ -1019,7 +964,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return 'fas fa-link';
       };
 
-      // --- Contact ---
       if (data.contact) {
         const connTitle = document.querySelector('#connect .card-section-title');
         if (connTitle && data.contact.title) connTitle.textContent = data.contact.title;
@@ -1056,7 +1000,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // --- Footer ---
       if (data.footer) {
         const footerDesc = document.querySelector('.footer-description');
         if (footerDesc && data.footer.description) footerDesc.textContent = data.footer.description;
@@ -1085,9 +1028,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('portfolioDataLoaded', () => renderCMSContent());
   window.addEventListener('portfolioDataUpdated', () => renderCMSContent());
 
-  // ==========================================
-  // 2. HEADER SCROLL STATE
-  // ==========================================
   const header = document.getElementById('site-header');
 
   const handleScroll = () => {
@@ -1101,9 +1041,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('scroll', handleScroll, { passive: true });
   handleScroll();
 
-  // ==========================================
-  // 3. SCROLL REVEAL (INTERSECTION OBSERVER)
-  // ==========================================
   const revealElements = document.querySelectorAll('[data-reveal]');
 
   if ('IntersectionObserver' in window) {
@@ -1125,9 +1062,6 @@ document.addEventListener('DOMContentLoaded', () => {
     revealElements.forEach(el => el.classList.add('in-view'));
   }
 
-  // ==========================================
-  // 4. ACTIVE NAVIGATION LINK HIGHLIGHTING
-  // ==========================================
   const sections = document.querySelectorAll('section[id]');
   const navLinks = document.querySelectorAll('.primary-nav .nav-link');
   const mobileNavLinks = document.querySelectorAll('.mobile-nav a');
@@ -1162,9 +1096,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('scroll', highlightNav, { passive: true });
 
-  // ==========================================
-  // 5. MOBILE MENU TOGGLE
-  // ==========================================
   const menuToggle = document.getElementById('menu-toggle');
   const mobileNav = document.getElementById('mobile-nav');
 
@@ -1200,7 +1131,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Back to Top Smooth Scroll
   document.querySelectorAll('a[href="#top"]').forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
@@ -1211,13 +1141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ==========================================
-  // 6. GALLERY & LIGHTBOX (handled dynamically via renderCMSContent)
-  // ==========================================
 
-  // ==========================================
-  // 7. KEYBOARD SHORTCUTS (1-8 & ESCAPE)
-  // ==========================================
   const shortcutTargets = {
     '1': '#origin',
     '2': '#about',
@@ -1255,9 +1179,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ==========================================
-  // 8. CUSTOM CURSOR
-  // ==========================================
   const cursorDot = document.querySelector('.cursor-dot');
   const cursorRing = document.querySelector('.cursor-ring');
 
@@ -1298,9 +1219,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ==========================================
-  // 9. CONTACT FORM HANDLING & VALIDATION
-  // ==========================================
   const contactForm = document.getElementById('contact-form');
   const formStatus = document.getElementById('form-status');
   const submitBtn = document.getElementById('contact-submit-btn');
@@ -1314,7 +1232,6 @@ document.addEventListener('DOMContentLoaded', () => {
     contactForm.addEventListener('submit', (e) => {
       e.preventDefault();
 
-      // Rate-limit: prevent rapid re-submission (5-second cooldown)
       const now = Date.now();
       if (now - lastSubmitTime < 5000) {
         formStatus.style.display = '';
@@ -1385,7 +1302,6 @@ document.addEventListener('DOMContentLoaded', () => {
         emailDelivered: false
       };
 
-      // 1. Guaranteed storage in central backend API and local data layer
       try {
         fetch('/api/messages', {
           method: 'POST',
@@ -1400,7 +1316,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn('PortfolioData: Could not save message locally:', err);
       }
 
-      // 2. Dispatch email notification to iakashverma00@gmail.com
       const sendEmail = async () => {
         try {
           const res = await fetch('https://formsubmit.co/ajax/iakashverma00@gmail.com', {
@@ -1429,12 +1344,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) { }
           }
         } catch (e) {
-          // Graceful fallback - message is safely recorded in Admin Panel
           console.info('Email notification dispatched to relay queue.');
         }
       };
 
-      // Run sendEmail with a gentle UI delay
       Promise.race([
         sendEmail(),
         new Promise(r => setTimeout(r, 1200))
@@ -1459,9 +1372,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ==========================================
-  // 10. REAL-TIME MULTI-PLATFORM API STATS ENGINE
-  // ==========================================
   const updateLastSyncedTimestamp = () => {
     const timestampEl = document.getElementById('presence-last-updated');
     if (timestampEl) {
@@ -1481,7 +1391,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Safe fetch helper for external stats APIs
   const safeFetchJson = async (url) => {
     const res = await fetch(url);
     if (!res.ok) return null;
@@ -1494,7 +1403,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // 1. GitHub API Fetcher (Live API)
   const fetchGitHubStats = async () => {
     const reposEl = document.getElementById('gh-repos');
     const followersEl = document.getElementById('gh-followers');
@@ -1542,7 +1450,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // 2. LeetCode Profile API Fetcher
   const fetchLeetCodeStats = async () => {
     const solvedEl = document.getElementById('lc-solved');
     const breakdownEl = document.getElementById('lc-breakdown');
@@ -1566,14 +1473,12 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
       } catch (altErr) {
-        // Fallthrough to sample feed
       }
       setStatValue(solvedEl, '320+');
       setStatValue(breakdownEl, '140/150/30');
     }
   };
 
-  // 3. GeeksforGeeks Profile API Fetcher
   const fetchGeeksforGeeksStats = async () => {
     const scoreEl = document.getElementById('gfg-score');
     const solvedEl = document.getElementById('gfg-solved');
@@ -1594,7 +1499,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // 4. HackerRank Profile API Fetcher
   const fetchHackerRankStats = async () => {
     const badgesEl = document.getElementById('hr-badges');
     const starsEl = document.getElementById('hr-stars');
@@ -1615,7 +1519,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // 5. LinkedIn Profile Verification
   const fetchLinkedInStats = async () => {
     const connEl = document.getElementById('li-connections');
     const netEl = document.getElementById('li-network');
@@ -1623,7 +1526,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatValue(netEl, 'Active');
   };
 
-  // 6. Instagram Profile Verification
   const fetchInstagramStats = async () => {
     const profEl = document.getElementById('ig-profile');
     const streamEl = document.getElementById('ig-stream');
@@ -1631,7 +1533,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatValue(streamEl, 'Journal');
   };
 
-  // Execute all platform fetches concurrently
   Promise.allSettled([
     fetchGitHubStats(),
     fetchLeetCodeStats(),
@@ -1643,25 +1544,15 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLastSyncedTimestamp();
   });
 
-  // Interactive GitHub Heatmap Grid Generator (53 Weeks x 7 Days)
   const renderGitHubHeatmapGrid = () => {
     const box = document.getElementById('github-heatmap-box');
     if (!box) return;
 
-    // Create 53 weeks (371 days) matrix simulating realistic GitHub activity distribution
-    // Matching exact activity levels from user reference screenshot:
-    // Level 0: #161b22 (dark grey-black grid cell)
-    // Level 1: #0e4429 (dark green)
-    // Level 2: #006d32 (medium green)
-    // Level 3: #26a641 (bright green)
-    // Level 4: #39d353 (neon green)
 
     const gridEl = document.createElement('div');
     gridEl.className = 'heatmap-svg-grid';
 
-    // Activity seed pattern matching user image spikes (Nov, Apr, Jun, Jul, Aug)
     const activeSpikes = {
-      // Week index: [dayIndices (0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat), level]
       12: [{ d: 1, l: 1 }, { d: 2, l: 3 }, { d: 3, l: 3 }, { d: 4, l: 2 }],
       13: [{ d: 3, l: 4 }, { d: 4, l: 4 }],
       14: [{ d: 4, l: 3 }, { d: 5, l: 2 }],
@@ -1680,7 +1571,6 @@ document.addEventListener('DOMContentLoaded', () => {
       52: [{ d: 2, l: 2 }, { d: 5, l: 1 }]
     };
 
-    // Build 53 columns (weeks)
     for (let w = 0; w < 53; w++) {
       const weekCol = document.createElement('div');
       weekCol.className = 'heatmap-week-col';
@@ -1697,7 +1587,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         dayCell.setAttribute('data-level', level);
 
-        // Calculate realistic date tooltip
         const today = new Date();
         const daysAgo = (52 - w) * 7 + (6 - d);
         const cellDate = new Date(today);
@@ -1724,15 +1613,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderGitHubHeatmapGrid();
 
-  // ==========================================
-  // 11. HERO VISUAL CARD 3D TILT ANIMATION
-  // ==========================================
   const heroVisual = document.querySelector('.hero-visual');
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isFinePointer = window.matchMedia('(pointer: fine)').matches;
 
   if (heroVisual && !prefersReducedMotion && isFinePointer) {
-    const maxTilt = 7; // max rotation degrees
+    const maxTilt = 7;
     let animationFrameId = null;
     let cardRect = null;
 
@@ -1779,15 +1665,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', updateCardRect, { passive: true });
   }
 
-  // ==========================================
-  // 12. REAL-TIME HERO CODE TYPING ANIMATION
-  // ==========================================
   const codeContainer = document.querySelector('.visual-code code');
   const captionEl = document.querySelector('.visual-caption');
   const tabLangEl = document.querySelector('.visual-tab span:nth-of-type(2)');
 
   if (codeContainer) {
-    // Helper to get fresh snippets dynamically from CMS Data Layer
     const getHeroVisualData = () => {
       const cmsHvData = typeof PortfolioData !== 'undefined' ? PortfolioData.get('heroVisual') : null;
 
@@ -1802,7 +1684,6 @@ document.addEventListener('DOMContentLoaded', () => {
         windowLogoText: 'AKASH'
       };
 
-      // Apply static header configurations
       const visualTab = document.querySelector('.visual-tab');
       if (visualTab) {
         const tabIcons = visualTab.querySelectorAll('i');

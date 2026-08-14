@@ -28,7 +28,6 @@ const server = http.createServer(async (req, res) => {
 
   req.query = parsedUrl.query;
 
-  // Handle Vercel API Routes
   if (pathname.startsWith('/api/')) {
     const cleanPath = pathname.replace(/\/$/, '');
     if (cleanPath === '/api/data' || cleanPath === '/api/data.js') {
@@ -40,12 +39,10 @@ const server = http.createServer(async (req, res) => {
     if (cleanPath === '/api/auth' || cleanPath === '/api/auth.js') {
       return handleApiRoute(req, res, authHandler);
     }
-    // Any unhandled /api/* path must always return a JSON 404 (never HTML)
     res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify({ success: false, error: 'API route not found' }));
   }
 
-  // Rewrites mapping (matches vercel.json)
   let targetPath = pathname;
   if (pathname === '/admin') targetPath = '/admin.html';
   if (pathname === '/admin-dashboard') targetPath = '/admin-dashboard.html';

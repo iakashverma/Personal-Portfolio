@@ -1,11 +1,4 @@
-/* Css file */
 
-/* ==========================================================================
-   AKASH VERMA — PORTFOLIO STYLE SYSTEM
-   Theme: Dark, Minimal, Editorial / Technical
-   ========================================================================== */
-
-/* ---------- Design Tokens ---------- */
 :root {
   --bg: #0a0a0a;
   --surface: #101010;
@@ -35,7 +28,6 @@
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --header-h: 84px;
 
-  /* Glassmorphism Tokens */
   --glass-bg: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(20, 20, 20, 0.5) 100%);
   --glass-border: rgba(255, 255, 255, 0.15);
   --glass-hover: rgba(255, 255, 255, 0.1);
@@ -45,7 +37,6 @@
   --status-red: #ff4757;
   --status-amber: #ffa726;
 
-  /* Footer Tokens */
   --footer-bg: #050505;
   --footer-text-primary: #f5f5f5;
   --footer-text-secondary: #858585;
@@ -53,7 +44,6 @@
   --footer-container-width: 1140px;
 }
 
-/* ---------- Reset & Base ---------- */
 *,
 *::before,
 *::after {
@@ -118,7 +108,6 @@ button {
   font-family: var(--font-mono);
 }
 
-/* ---------- Skip Link & Focus ---------- */
 .skip-link {
   position: absolute;
   top: -100%;
@@ -142,7 +131,6 @@ button {
   outline-offset: 3px;
 }
 
-/* ---------- Background Texture ---------- */
 .grain {
   position: fixed;
   inset: 0;
@@ -156,7 +144,6 @@ button {
   opacity: 0.6;
 }
 
-/* ---------- Layout Containers ---------- */
 .container {
   max-width: var(--container);
   margin: 0 auto;
@@ -170,7 +157,6 @@ button {
   border-bottom: 1px solid var(--border);
 }
 
-/* ---------- Custom Cursor ---------- */
 .cursor-dot,
 .cursor-ring {
   position: fixed;
@@ -208,9 +194,6 @@ body.cursor-ready .cursor-ring {
   border-color: var(--text-primary);
 }
 
-/* ==========================================================================
-   HEADER — COMMAND TAB NAV
-   ========================================================================== */
 .site-header {
   position: fixed;
   top: var(--space-sm);
@@ -340,7 +323,6 @@ body.cursor-ready .cursor-ring {
   font-size: 11px;
 }
 
-/* Status Indicator Dot */
 .status-dot {
   width: 8px;
   height: 8px;
@@ -370,7 +352,6 @@ body.cursor-ready .cursor-ring {
   }
 }
 
-/* Mobile Toggle */
 .menu-toggle {
   display: none;
   margin-left: 2px;
@@ -397,7 +378,6 @@ body.cursor-ready .cursor-ring {
   transform: translateY(-3px) rotate(-45deg);
 }
 
-/* Mobile Navigation Overlay */
 .mobile-nav {
   position: fixed;
   inset: var(--header-h) 0 0 0;
@@ -503,9 +483,6 @@ body.cursor-ready .cursor-ring {
   border-color: rgba(255, 167, 38, 0.25);
 }
 
-/* ==========================================================================
-   BUTTONS
-   ========================================================================== */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -557,9 +534,6 @@ body.cursor-ready .cursor-ring {
   background: rgba(255, 255, 255, 0.03);
 }
 
-/* ==========================================================================
-   HERO — ORIGIN
-   ========================================================================== */
 .hero {
   min-height: 100vh;
   display: flex;
@@ -693,7 +667,6 @@ body.cursor-ready .cursor-ring {
   color: var(--text-secondary);
 }
 
-/* Hero Visual Mockup */
 .hero-visual {
   width: 100%;
   perspective: 1000px;
@@ -825,47 +798,37 @@ body.cursor-ready .cursor-ring {
   color: inherit;
 }
 
-/* Syntax Highlighting Colors */
 .syn-kw {
   color: #f43f5e;
   font-weight: 600;
 }
 
-/* Keywords: def, return, const, import, class */
 .syn-fn {
   color: #3b82f6;
   font-weight: 600;
 }
 
-/* Function names: burnout_score, fetch, train */
 .syn-str {
   color: #10b981;
 }
 
-/* Strings: "burnout", 'MOODIX' */
 .syn-num {
   color: #f59e0b;
 }
 
-/* Numbers: 7, 100, 0.18 */
 .syn-comment {
   color: #6b7280;
   font-style: italic;
 }
 
-/* Comments: # ... */
 .syn-type {
   color: #8b5cf6;
 }
 
-/* Types & builtins: sessions, self, list */
 .syn-op {
   color: #ec4899;
 }
 
-/* Operators: =, -, /, * */
-
-/* Blinking Caret / Cursor */
 .typing-cursor {
   display: inline-block;
   width: 2px;
@@ -937,9 +900,6 @@ body.cursor-ready .cursor-ring {
   }
 }
 
-/* ==========================================================================
-   SHARED SECTION HEADERS
-   ========================================================================== */
 .card-section-header {
   text-align: center;
   margin-bottom: var(--space-lg);
@@ -961,9 +921,6 @@ body.cursor-ready .cursor-ring {
   line-height: 1.6;
 }
 
-/* ==========================================================================
-   ABOUT SECTION
-   ========================================================================== */
 .about-grid {
   display: grid;
   grid-template-columns: 380px 1fr;
@@ -1111,9 +1068,6 @@ body.cursor-ready .cursor-ring {
   margin: 4px 0;
 }
 
-/* ==========================================================================
-   PROJECTS & CERTIFICATIONS (CARD GRID)
-   ========================================================================== */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1175,9 +1129,6 @@ body.cursor-ready .cursor-ring {
   color: var(--text-secondary);
 }
 
-/* ==========================================================================
-   SKILLS SECTION
-   ========================================================================== */
 .skills-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1249,9 +1200,6 @@ body.cursor-ready .cursor-ring {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* ==========================================================================
-   EDUCATION TIMELINE
-   ========================================================================== */
 .timeline-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1275,7 +1223,6 @@ body.cursor-ready .cursor-ring {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
-/* Top row: icon + badge in one line */
 .timeline-card-top {
   display: flex;
   align-items: center;
@@ -1380,9 +1327,6 @@ body.cursor-ready .cursor-ring {
   color: var(--status-green);
 }
 
-/* ==========================================================================
-   DEVELOPER PRESENCE SECTION
-   ========================================================================== */
 .presence-dashboard-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -1408,7 +1352,6 @@ body.cursor-ready .cursor-ring {
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
 }
 
-/* GitHub Card Spans 6 Columns */
 .presence-github-card {
   grid-column: span 6;
   gap: 24px;
@@ -1540,8 +1483,6 @@ body.cursor-ready .cursor-ring {
   transform: translateX(4px);
 }
 
-
-/* GitHub Combined Card Internal Layout */
 .presence-github-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -1651,7 +1592,6 @@ body.cursor-ready .cursor-ring {
   background: rgba(255, 255, 255, 0.4);
 }
 
-/* Months Header Row */
 .heatmap-months {
   display: flex;
   justify-content: space-between;
@@ -1663,7 +1603,6 @@ body.cursor-ready .cursor-ring {
   min-width: 720px;
 }
 
-/* Main Row: Weekday Labels + Chart Box */
 .heatmap-main-row {
   display: flex;
   align-items: center;
@@ -1698,7 +1637,6 @@ body.cursor-ready .cursor-ring {
   border-radius: 4px;
 }
 
-/* Custom Interactive SVG Heatmap Grid (when generated) */
 .heatmap-svg-grid {
   display: grid;
   grid-template-columns: repeat(53, 1fr);
@@ -1748,7 +1686,6 @@ body.cursor-ready .cursor-ring {
   background: #39d353;
 }
 
-/* Heatmap Footer & Legend matching reference UI */
 .heatmap-footer {
   display: flex;
   align-items: center;
@@ -1776,7 +1713,6 @@ body.cursor-ready .cursor-ring {
   gap: 4px;
 }
 
-/* Skeleton Loading & Last Updated Indicator */
 .stat-skeleton {
   position: relative;
   transition: opacity 0.3s var(--ease);
@@ -1847,7 +1783,6 @@ body.cursor-ready .cursor-ring {
   background: #39d353;
 }
 
-/* Card Body & Metrics */
 .presence-card-body {
   display: flex;
   flex-direction: column;
@@ -1893,9 +1828,6 @@ body.cursor-ready .cursor-ring {
   padding-top: 4px;
 }
 
-/* ==========================================================================
-   GALLERY SECTION (OPENCLUELY CARD LAYOUT)
-   ========================================================================== */
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1904,9 +1836,6 @@ body.cursor-ready .cursor-ring {
   margin: 0 auto;
 }
 
-/* ==========================================================================
-   GALLERY CARDS — Premium Refined Aesthetics
-   ========================================================================== */
 .gallery-opencluely-card {
   background: #111111;
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -1967,10 +1896,6 @@ body.cursor-ready .cursor-ring {
   text-transform: uppercase;
 }
 
-
-/* ==========================================================================
-   LIGHTBOX MODAL
-   ========================================================================== */
 .lightbox-modal {
   position: fixed;
   inset: 0;
@@ -2013,7 +1938,6 @@ body.cursor-ready .cursor-ring {
   transform: scale(1);
 }
 
-/* --- Strict Fixed 16:10 Media Viewing Area --- */
 .lightbox-media-container {
   position: relative;
   width: 100%;
@@ -2089,7 +2013,6 @@ body.cursor-ready .cursor-ring {
   margin: auto;
 }
 
-/* --- Top Floating Controls --- */
 .lightbox-top-bar {
   position: absolute;
   top: 14px;
@@ -2231,7 +2154,6 @@ body.cursor-ready .cursor-ring {
   right: 14px;
 }
 
-/* --- Details Footer --- */
 .lightbox-details {
   padding: 20px 24px;
   display: flex;
@@ -2269,9 +2191,6 @@ body.cursor-ready .cursor-ring {
   margin: 0;
 }
 
-/* ==========================================================================
-   CONTACT SECTION & MAP
-   ========================================================================== */
 .connect {
   border-bottom: none;
   text-align: left;
@@ -2284,7 +2203,6 @@ body.cursor-ready .cursor-ring {
   align-items: stretch;
 }
 
-/* Contact Form */
 .connect-form-wrapper {
   display: flex;
   flex-direction: column;
@@ -2452,7 +2370,6 @@ body.cursor-ready .cursor-ring {
   }
 }
 
-/* Interactive Map Card */
 .connect-map-wrapper {
   display: flex;
   flex-direction: column;
@@ -2580,9 +2497,6 @@ body.cursor-ready .cursor-ring {
   text-align: center;
 }
 
-/* ==========================================================================
-   FOOTER
-   ========================================================================== */
 .site-footer {
   background: linear-gradient(180deg, var(--bg) 0%, rgba(8, 9, 11, 0.98) 100%);
   border-top: 1px solid var(--footer-border);
@@ -2679,7 +2593,6 @@ body.cursor-ready .cursor-ring {
   margin: 0;
 }
 
-/* Social Buttons */
 .footer-socials {
   display: flex;
   align-items: center;
@@ -2711,7 +2624,6 @@ body.cursor-ready .cursor-ring {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
-/* Footer Navigation Column */
 .footer-nav-col {
   display: flex;
   flex-direction: column;
@@ -2777,7 +2689,6 @@ body.cursor-ready .cursor-ring {
   transform: translateX(0);
 }
 
-/* Footer Divider */
 .footer-divider {
   width: 100%;
   height: 1px;
@@ -2785,7 +2696,6 @@ body.cursor-ready .cursor-ring {
   margin: 36px 0 28px 0;
 }
 
-/* Footer Bottom Bar */
 .footer-bottom {
   display: flex;
   align-items: center;
@@ -2810,7 +2720,6 @@ body.cursor-ready .cursor-ring {
   gap: 20px;
 }
 
-/* Minimal Circle Back to Top Button */
 .back-to-top-circle {
   width: 38px;
   height: 38px;
@@ -2903,9 +2812,6 @@ body.cursor-ready .cursor-ring {
   opacity: 0.9;
 }
 
-/* ==========================================================================
-   SCROLL REVEAL ANIMATIONS
-   ========================================================================== */
 [data-reveal] {
   opacity: 0;
   transform: translateY(18px);
@@ -2933,9 +2839,6 @@ body.cursor-ready .cursor-ring {
   transition-delay: 0.18s;
 }
 
-/* ==========================================================================
-   RESPONSIVE LAYOUTS
-   ========================================================================== */
 @media (max-width: 1199px) {
   .hero-grid {
     grid-template-columns: 1fr 400px;
@@ -3132,7 +3035,6 @@ body.cursor-ready .cursor-ring {
   }
 }
 
-/* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -3151,9 +3053,6 @@ body.cursor-ready .cursor-ring {
   }
 }
 
-/* ==========================================================================
-   CERTIFICATES CARD REDESIGN (Compact, Balanced & Polished)
-   ========================================================================== */
 .cert-card {
   display: flex;
   flex-direction: column;
@@ -3257,7 +3156,6 @@ body.cursor-ready .cursor-ring {
   flex: 1;
 }
 
-/* --- Certificate Hover-Activated Small Image Preview --- */
 .cert-card-hover-preview {
   position: absolute;
   inset: 0;
@@ -3395,7 +3293,6 @@ body.cursor-ready .cursor-ring {
   padding: 8px 16px;
 }
 
-/* --- Project Hover-Activated Small Image Preview --- */
 .project-card-hover-preview {
   position: absolute;
   inset: 0;
@@ -3486,7 +3383,6 @@ body.cursor-ready .cursor-ring {
   transform: scale(1.04);
 }
 
-/* --- Project Domains & Tech Stack Tags --- */
 .project-domains-row {
   display: flex;
   flex-wrap: wrap;
@@ -3543,9 +3439,6 @@ body.cursor-ready .cursor-ring {
   box-shadow: none !important;
 }
 
-/* ==========================================================================
-   SHOW MORE / SHOW LESS CARD VISIBILITY TOGGLE STYLES
-   ========================================================================== */
 .feature-card.is-hidden-card {
   display: none !important;
   opacity: 0;
@@ -3618,9 +3511,6 @@ body.cursor-ready .cursor-ring {
   }
 }
 
-/* ==========================================================================
-   PORTFOLIO INTRO GREETING SCREEN (3s Developer Sequence)
-   ========================================================================== */
 body.intro-active {
   overflow: hidden !important;
   height: 100vh;
@@ -3676,7 +3566,6 @@ body.intro-active {
   opacity: 0.6;
 }
 
-/* Floating Developer Tokens */
 .intro-floating-code {
   position: absolute;
   font-family: var(--font-mono, 'JetBrains Mono', monospace);
@@ -3901,7 +3790,6 @@ body.intro-active {
   transition: width 2.4s cubic-bezier(0.12, 0.88, 0.32, 1);
 }
 
-/* Intro screen responsive adjustments */
 @media (max-width: 640px) {
   .intro-floating-code {
     display: none;

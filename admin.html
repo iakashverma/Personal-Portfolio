@@ -1,4 +1,3 @@
-<!-- Admin File -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -75,7 +74,6 @@
 
   <script>
     (() => {
-      // SHA-256 hash function
       async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -83,11 +81,9 @@
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       }
 
-      // Exact credentials: admin@akku.com / akku@121
       const VALID_EMAIL = 'admin@akku.com';
-      const VALID_PASS_HASH = '50cf58d2a2363ed8b4b6a27075e5667816a36811f6f2e1be012b396c15567746'; // sha256 of 'akku@121'
+      const VALID_PASS_HASH = '50cf58d2a2363ed8b4b6a27075e5667816a36811f6f2e1be012b396c15567746';
 
-      // Check if already logged in
       if (sessionStorage.getItem('admin_session') === 'authenticated') {
         window.location.href = 'admin-dashboard.html';
         return;
@@ -99,7 +95,6 @@
       const togglePw = document.getElementById('toggle-password');
       const pwInput = document.getElementById('login-password');
 
-      // Toggle password visibility
       if (togglePw && pwInput) {
         togglePw.addEventListener('click', () => {
           const isPassword = pwInput.type === 'password';
@@ -116,7 +111,6 @@
         errorEl.textContent = '';
         errorEl.className = 'login-error';
 
-        // Brute-force lockout: 5 failed attempts = 30-second cooldown
         const now = Date.now();
         if (failedAttempts >= 5 && now < lockoutUntil) {
           const secsLeft = Math.ceil((lockoutUntil - now) / 1000);
@@ -143,7 +137,6 @@
         const passHash = await sha256(password);
         const lowerHash = passHash.toLowerCase();
 
-        // 1. Try server-side authentication
         try {
           const authRes = await fetch('/api/auth', {
             method: 'POST',
@@ -168,7 +161,6 @@
           console.warn('Server auth endpoint unreachable:', networkErr.message);
         }
 
-        // 2. Client-side validation fallback
         if (email === VALID_EMAIL && lowerHash === VALID_PASS_HASH) {
           failedAttempts = 0;
           sessionStorage.setItem('admin_session', 'authenticated');
@@ -177,7 +169,6 @@
           return;
         }
 
-        // Authentication failed
         failedAttempts++;
         if (failedAttempts >= 5) {
           lockoutUntil = Date.now() + 30000;

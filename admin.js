@@ -1,13 +1,5 @@
-/**
- * ADMIN DASHBOARD — Logic Controller
- * Handles auth guard, sidebar navigation, section rendering,
- * CRUD operations, modals, and toast notifications.
- */
 
 (() => {
-  // ============================================================
-  // AUTH GUARD
-  // ============================================================
   if (sessionStorage.getItem('admin_session') !== 'authenticated') {
     window.location.href = 'admin.html';
     return;
@@ -19,31 +11,23 @@
   let confirmCallback = null;
   let editModalCallback = null;
 
-  // Load admin API token from sessionStorage (set during login via /api/auth)
   const adminApiToken = sessionStorage.getItem('admin_api_token') || '';
   if (adminApiToken && typeof PortfolioData !== 'undefined') {
     PortfolioData.setAdminSecret(adminApiToken);
   }
 
-  // Helper to build admin auth headers
   const adminHeaders = () => {
     const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
     if (adminApiToken) h['x-admin-secret'] = adminApiToken;
     return h;
   };
 
-  // ============================================================
-  // TOAST
-  // ============================================================
   const showToast = (message, type = 'success') => {
     toastEl.className = `toast toast-${type} show`;
     toastEl.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
     setTimeout(() => { toastEl.classList.remove('show'); }, 3000);
   };
 
-  // ============================================================
-  // CONFIRM DIALOG
-  // ============================================================
   const showConfirm = (title, text, callback) => {
     const overlay = document.getElementById('confirm-overlay');
     document.getElementById('confirm-title').textContent = title;
@@ -63,9 +47,6 @@
     confirmCallback = null;
   });
 
-  // ============================================================
-  // EDIT MODAL
-  // ============================================================
   const showEditModal = (title, fieldsHTML, onSave, modalClass = '') => {
     const modalEl = document.querySelector('.edit-modal');
     if (modalEl) {
@@ -90,9 +71,6 @@
     if (editModalCallback) editModalCallback();
   });
 
-  // ============================================================
-  // SIDEBAR NAVIGATION
-  // ============================================================
   const navItems = document.querySelectorAll('.sidebar-nav-item');
 
   navItems.forEach(btn => {
@@ -101,13 +79,11 @@
       btn.classList.add('active');
       currentSection = btn.dataset.section;
       renderSection(currentSection);
-      // Close mobile sidebar
       document.getElementById('admin-sidebar').classList.remove('open');
       document.getElementById('sidebar-overlay').classList.remove('show');
     });
   });
 
-  // Mobile sidebar toggle & close
   const sidebarToggle = document.getElementById('sidebar-toggle');
   const sidebarOverlay = document.getElementById('sidebar-overlay');
   const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
@@ -134,7 +110,6 @@
     sidebarOverlay.addEventListener('click', closeSidebar);
   }
 
-  // Escape key closes modals and mobile sidebar
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeSidebar();
@@ -149,7 +124,6 @@
     }
   });
 
-  // Logout
   document.getElementById('logout-btn').addEventListener('click', () => {
     sessionStorage.removeItem('admin_session');
     sessionStorage.removeItem('admin_email');
@@ -157,9 +131,6 @@
     window.location.href = 'admin.html';
   });
 
-  // ============================================================
-  // UTILITY HELPERS
-  // ============================================================
   const esc = (str) => {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -180,7 +151,6 @@
     return PortfolioData.isEdited(section) ? `<span class="edited-badge"><i class="fas fa-pen"></i> Edited</span>` : '';
   };
 
-  // --- Client-Side Multi-Page PDF to High-Res WebP Image Converter ---
   const convertPdfToAllPagesWebP = (file, scale = 2.0, quality = 0.88) => {
     return new Promise((resolve, reject) => {
       if (!window.pdfjsLib) {
@@ -233,7 +203,6 @@
     });
   };
 
-  // --- Client-Side Image File to WebP Converter ---
   const compressImageFileToWebP = (file, maxWidth = 1600, quality = 0.88) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -290,7 +259,6 @@
     }
   };
 
-  // --- Contact Message Utilities ---
   let cachedMessages = [];
 
   const getMessages = () => {
@@ -361,9 +329,6 @@
     }
   };
 
-  // ============================================================
-  // RENDER SECTION — Router
-  // ============================================================
   const renderSection = (section) => {
     updateSidebarBadges();
     switch (section) {
@@ -384,9 +349,6 @@
     }
   };
 
-  // ============================================================
-  // DASHBOARD OVERVIEW
-  // ============================================================
   const renderDashboard = () => {
     const data = PortfolioData.getAll();
     const messages = getMessages();
@@ -411,8 +373,7 @@
         </div>
       </div>
 
-      <!-- Cloud Sync & Central Persistence Status Card -->
-      <div class="editor-card" style="border-left: 4px solid ${isConnected !== false ? 'var(--status-green)' : 'var(--status-amber)'};">
+            <div class="editor-card" style="border-left: 4px solid ${isConnected !== false ? 'var(--status-green)' : 'var(--status-amber)'};">
         <div class="editor-card-header">
           <div style="display:flex;align-items:center;gap:10px;">
             <i class="fas fa-cloud" style="color:${isConnected !== false ? 'var(--status-green)' : 'var(--status-amber)'};font-size:18px;"></i>
@@ -502,7 +463,6 @@
       </div>
     `;
 
-    // Bind Central DB Sync Test & Guide
     document.getElementById('btn-test-db-sync')?.addEventListener('click', async () => {
       const testBtn = document.getElementById('btn-test-db-sync');
       if (testBtn) {
@@ -556,7 +516,6 @@
       });
     });
 
-    // Bind Message actions in dashboard
     document.querySelectorAll('.view-msg-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.idx);
@@ -595,9 +554,6 @@
     });
   };
 
-  // ============================================================
-  // MESSAGES INBOX VIEW
-  // ============================================================
   const renderMessages = () => {
     const messages = getMessages();
     const unreadCount = messages.filter(m => !m.read).length;
@@ -665,7 +621,6 @@
       </div>
     `;
 
-    // Bind Inbox Handlers
     document.querySelectorAll('.view-inbox-msg').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.idx);
@@ -729,9 +684,6 @@
     });
   };
 
-  // ============================================================
-  // HERO SECTION EDITOR (Home Section & Resume)
-  // ============================================================
   const renderHero = () => {
     const data = PortfolioData.get('hero') || {};
     const ctaPrimary = data.ctaPrimary || { text: 'Hire Me', url: '#connect', icon: 'fas fa-paper-plane' };
@@ -781,8 +733,7 @@
         ${editedBadge('hero')}
       </div>
 
-      <!-- Hero Header & Content -->
-      <div class="editor-card">
+            <div class="editor-card">
         <div class="editor-card-header">
           <span class="editor-card-title"><i class="fas fa-bullhorn" style="color:var(--accent);margin-right:8px;"></i> Banner Content</span>
         </div>
@@ -802,14 +753,12 @@
         </div>
       </div>
 
-      <!-- Action Buttons & Resume Management -->
-      <div class="editor-card">
+            <div class="editor-card">
         <div class="editor-card-header">
           <span class="editor-card-title"><i class="fas fa-mouse-pointer" style="color:#10b981;margin-right:8px;"></i> Call-to-Action Buttons &amp; Resume</span>
         </div>
         <div class="editor-card-body">
-          <!-- Button 1: Hire Me -->
-          <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;margin-bottom:18px;">
+                    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;margin-bottom:18px;">
             <div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
               <i class="fas fa-paper-plane" style="color:#10b981;"></i> Primary Button (Contact Redirect)
             </div>
@@ -826,8 +775,7 @@
             </div>
           </div>
 
-          <!-- Button 2: View Resume -->
-          <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;">
+                    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;">
             <div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
               <i class="fas fa-file-pdf" style="color:#f43f5e;"></i> Secondary Button &amp; Resume Document (Lightbox Popup)
             </div>
@@ -862,8 +810,7 @@
                 </button>
               </div>
 
-              <!-- Converted Pages Preview -->
-              <div id="hero-resume-pages-list" style="margin-top:8px;"></div>
+                            <div id="hero-resume-pages-list" style="margin-top:8px;"></div>
             </div>
           </div>
         </div>
@@ -877,7 +824,6 @@
 
     renderResumePagesPreview();
 
-    // Direct URL input listener
     const urlInput = document.getElementById('hero-cta-secondary-url');
     if (urlInput) {
       urlInput.addEventListener('input', () => {
@@ -889,7 +835,6 @@
       });
     }
 
-    // Clear resume button
     const clearBtn = document.getElementById('hero-resume-clear-btn');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
@@ -903,7 +848,6 @@
       });
     }
 
-    // Resume File Upload Handling
     const fileInput = document.getElementById('hero-resume-file');
     const filenameLabel = document.getElementById('hero-resume-filename');
     if (fileInput) {
@@ -978,9 +922,6 @@
     });
   };
 
-  // ============================================================
-  // ABOUT SECTION EDITOR
-  // ============================================================
   const renderAbout = () => {
     const data = PortfolioData.get('about');
     mainEl.innerHTML = `
@@ -1099,7 +1040,6 @@
       </div>
     `;
 
-    // Picture handlers
     const fileInput = document.getElementById('about-img-file');
     const urlInput = document.getElementById('about-img-url');
     const previewImg = document.getElementById('about-img-preview');
@@ -1184,9 +1124,6 @@
     });
   };
 
-  // ============================================================
-  // LIST SECTION EDITOR (Projects, Skills, Education, Certifications)
-  // ============================================================
   const renderListSection = (sectionKey) => {
     const data = PortfolioData.get(sectionKey);
     const configs = {
@@ -1339,9 +1276,7 @@
       </div>
     `;
 
-    // --- Event Handlers ---
 
-    // Toggle enabled
     items.forEach((_, i) => {
       const toggle = document.getElementById(`toggle-${i}`);
       if (toggle) {
@@ -1351,7 +1286,6 @@
       }
     });
 
-    // Item actions (up, down, edit, delete)
     document.querySelectorAll('#list-items .item-action-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const action = btn.dataset.action;
@@ -1375,7 +1309,6 @@
       });
     });
 
-    // Add new item
     document.getElementById('list-add-item').addEventListener('click', () => {
       const newItem = cfg.newItem();
       items.push(newItem);
@@ -1391,12 +1324,10 @@
       renderListSection(sectionKey);
     };
 
-    // Save
     document.getElementById('list-save').addEventListener('click', () => {
       saveListAndRerender();
     });
 
-    // Reset
     document.getElementById('list-reset').addEventListener('click', () => {
       showConfirm(`Reset ${cfg.title}?`, 'All changes will be lost.', async () => {
         const res = await PortfolioData.resetAsync(sectionKey);
@@ -1405,7 +1336,6 @@
       });
     });
 
-    // --- Media Processing Helpers ---
     const optimizeImageToWebP = (file, maxWidth = 1200, maxHeight = 800, quality = 0.82) => {
       return new Promise((resolve, reject) => {
         if (!file || !file.type.startsWith('image/')) {
@@ -1463,12 +1393,10 @@
       });
     };
 
-    // Dedicated Project Editor Modal
     const openProjectModal = (items, idx) => {
       const item = items[idx];
       const isNew = idx === items.length - 1 && !PortfolioData.isEdited('projects');
 
-      // State copies & normalize legacy 'Web'
       let activeDomains = Array.isArray(item.domains) && item.domains.length
         ? item.domains.map(d => d === 'Web' ? 'Web Development' : d)
         : (item.domain ? [item.domain === 'Web' ? 'Web Development' : item.domain] : ['Web Development']);
@@ -1523,8 +1451,7 @@
           <textarea class="field-textarea" id="proj-desc" rows="3" placeholder="Describe the purpose, features, and technical architecture of this project...">${esc(item.description || '')}</textarea>
         </div>
 
-        <!-- Domain / Category Multi-Select -->
-        <div class="field-group">
+                <div class="field-group">
           <label class="field-label">Project Domain / Category (Multi-select)</label>
           <div class="domain-pills-wrap" id="proj-domain-pills">
             ${DOMAIN_OPTIONS.map(d => `
@@ -1538,8 +1465,7 @@
           </div>
         </div>
 
-        <!-- Tech Stack Tag Manager -->
-        <div class="field-group">
+                <div class="field-group">
           <label class="field-label">Project Tech Stack</label>
           <div class="tech-stack-container">
             <div class="tech-chips-list" id="proj-tech-chips">
@@ -1563,8 +1489,7 @@
           </div>
         </div>
 
-        <!-- Project Media: Multiple Images -->
-        <div class="field-group">
+                <div class="field-group">
           <label class="field-label">Project Images Gallery (${activeImages.length} uploaded)</label>
           <div class="media-manager-card">
             <div class="media-upload-dropzone" id="proj-img-dropzone">
@@ -1608,8 +1533,7 @@
           </div>
         </div>
 
-        <!-- Project Media: One Video (.mp4 only, optional) -->
-        <div class="field-group">
+                <div class="field-group">
           <label class="field-label">Project Video (Optional • .mp4 only • Plays after all images in carousel)</label>
           <div class="media-manager-card">
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
@@ -1630,8 +1554,7 @@
           </div>
         </div>
 
-        <!-- Project Links (Optional) -->
-        <div class="field-row">
+                <div class="field-row">
           <div class="field-group">
             <label class="field-label">Live Deployment URL (Optional)</label>
             <input type="text" class="field-input" id="proj-demo-url" value="${esc(item.demoUrl || '')}" placeholder="https://my-app.vercel.app">
@@ -1644,7 +1567,6 @@
       `;
 
       showEditModal(isNew ? 'Add New Project' : 'Edit Project', renderProjectEditorHTML(), () => {
-        // Save project handler
         const titleVal = document.getElementById('proj-title').value.trim();
         const descVal = document.getElementById('proj-desc').value.trim();
 
@@ -1653,7 +1575,6 @@
           return;
         }
 
-        // Collect custom domain if applicable
         const customDomainEl = document.getElementById('proj-custom-domain-input');
         if (customDomainEl && customDomainEl.value.trim()) {
           const cust = customDomainEl.value.trim();
@@ -1667,7 +1588,7 @@
         item.description = descVal;
         activeDomains = [...new Set(activeDomains.map(d => d === 'Web' ? 'Web Development' : d).filter(Boolean))];
         item.domains = activeDomains.length ? activeDomains : ['Web Development'];
-        item.domain = item.domains[0]; // backward compatibility
+        item.domain = item.domains[0];
         item.techStack = activeTech;
         item.images = activeImages;
         item.video = (document.getElementById('proj-video-url-input')?.value.trim() || activeVideo).trim();
@@ -1679,9 +1600,7 @@
         showToast('Project saved & synchronized globally!');
       }, 'project-edit-modal');
 
-      // Bind dynamic interactive elements in Project Modal
       const bindProjectModalEvents = () => {
-        // 1. Domain Pills Multi-select
         document.querySelectorAll('#proj-domain-pills .domain-pill-choice').forEach(pill => {
           pill.addEventListener('click', () => {
             const domainName = pill.getAttribute('data-domain');
@@ -1702,7 +1621,6 @@
           });
         });
 
-        // 2. Tech Stack Chips & Presets
         const renderTechChips = () => {
           const chipsEl = document.getElementById('proj-tech-chips');
           if (chipsEl) {
@@ -1756,7 +1674,6 @@
 
         renderTechChips();
 
-        // 3. Project Images Manager
         const dropzone = document.getElementById('proj-img-dropzone');
         const fileInput = document.getElementById('proj-img-file-input');
         const urlInput = document.getElementById('proj-img-url-input');
@@ -1791,7 +1708,6 @@
               `;
             }).join('');
 
-            // Bind image action buttons
             gridEl.querySelectorAll('.img-action-btn').forEach(btn => {
               btn.addEventListener('click', () => {
                 const action = btn.getAttribute('data-action');
@@ -1883,7 +1799,6 @@
           });
         }
 
-        // 4. Project Video (.mp4) Manager
         const videoFileInput = document.getElementById('proj-video-file-input');
         const videoUrlInput = document.getElementById('proj-video-url-input');
 
@@ -1954,7 +1869,6 @@
       setTimeout(bindProjectModalEvents, 50);
     };
 
-    // --- Client-Side PDF to High-Res WebP Image Converter ---
     const convertPdfToImageWebP = (file, scale = 2.2, quality = 0.88) => {
       return new Promise((resolve, reject) => {
         if (!window.pdfjsLib) {
@@ -1999,7 +1913,6 @@
       });
     };
 
-    // Dedicated Certificate Editor Modal
     const openCertificateModal = (items, idx) => {
       const item = items[idx];
       const isNew = idx === items.length - 1 && !PortfolioData.isEdited('certifications');
@@ -2040,8 +1953,7 @@
           <textarea class="field-textarea" id="cert-desc" rows="3" placeholder="Brief summary of skills, competencies, and topics verified by this certificate...">${esc(item.description || '')}</textarea>
         </div>
 
-        <!-- Certificate Source Selector -->
-        <div class="field-group">
+                <div class="field-group">
           <label class="field-label">Certificate Source Format</label>
           <div class="cert-source-group" id="cert-source-selector">
             <div class="cert-source-pill ${activeSourceType === 'image' ? 'selected' : ''}" data-source="image">
@@ -2058,10 +1970,8 @@
             </div>
           </div>
 
-          <!-- Dynamic Source Input Panels -->
-          <div class="media-manager-card">
-            <!-- 1. Image Upload Panel -->
-            <div id="cert-panel-image" style="display:${activeSourceType === 'image' ? 'block' : 'none'};">
+                    <div class="media-manager-card">
+                        <div id="cert-panel-image" style="display:${activeSourceType === 'image' ? 'block' : 'none'};">
               <div class="media-upload-dropzone" id="cert-img-dropzone">
                 <i class="fas fa-file-image"></i>
                 <div class="media-dropzone-text">Click to upload Certificate Image (JPG, PNG, WebP)</div>
@@ -2070,8 +1980,7 @@
               </div>
             </div>
 
-            <!-- 2. PDF Upload Panel -->
-            <div id="cert-panel-pdf" style="display:${activeSourceType === 'pdf' ? 'block' : 'none'};">
+                        <div id="cert-panel-pdf" style="display:${activeSourceType === 'pdf' ? 'block' : 'none'};">
               <div class="media-upload-dropzone" id="cert-pdf-dropzone">
                 <i class="fas fa-file-pdf" style="color:#ef4444;"></i>
                 <div class="media-dropzone-text">Click to upload Certificate PDF (.pdf)</div>
@@ -2080,22 +1989,19 @@
               </div>
             </div>
 
-            <!-- 3. URL Panel -->
-            <div id="cert-panel-url" style="display:${activeSourceType === 'url' ? 'block' : 'none'};">
+                        <div id="cert-panel-url" style="display:${activeSourceType === 'url' ? 'block' : 'none'};">
               <div style="display:flex;gap:8px;">
                 <input type="text" class="field-input" id="cert-url-input" value="${esc(activeSourceType === 'url' ? activeImageUrl : '')}" placeholder="Paste direct certificate image URL (https://...)" style="font-size:12.5px;">
                 <button type="button" class="btn-admin" id="cert-url-preview-btn" style="padding:6px 14px;font-size:12.5px;white-space:nowrap;"><i class="fas fa-eye"></i> Preview</button>
               </div>
             </div>
 
-            <!-- Loading State for PDF rendering -->
-            <div class="cert-convert-loading" id="cert-loading-state" style="display:none;">
+                        <div class="cert-convert-loading" id="cert-loading-state" style="display:none;">
               <i class="fas fa-circle-notch"></i>
               <span>Converting PDF certificate to high-resolution image...</span>
             </div>
 
-            <!-- Live Image Preview -->
-            <div id="cert-preview-container">
+                        <div id="cert-preview-container">
               ${activeImageUrl ? `
                 <div class="cert-preview-wrapper" id="cert-preview-wrap">
                   <img src="${esc(activeImageUrl)}" alt="Certificate Preview" class="cert-preview-img">
@@ -2109,8 +2015,7 @@
           </div>
         </div>
 
-        <!-- Optional External Credential Link -->
-        <div class="field-group">
+                <div class="field-group">
           <label class="field-label">Original Credential / Verification URL (Optional)</label>
           <input type="text" class="field-input" id="cert-verify-url" value="${esc(item.url || '')}" placeholder="https://coursera.org/verify/...">
         </div>
@@ -2138,9 +2043,7 @@
         showToast('Certificate saved & synchronized globally!');
       }, 'project-edit-modal');
 
-      // Bind dynamic events in certificate modal
       const bindCertModalEvents = () => {
-        // Source type pills click
         document.querySelectorAll('#cert-source-selector .cert-source-pill').forEach(pill => {
           pill.addEventListener('click', () => {
             activeSourceType = pill.getAttribute('data-source');
@@ -2179,7 +2082,6 @@
           }
         };
 
-        // Image upload
         const imgDropzone = document.getElementById('cert-img-dropzone');
         const imgFileInput = document.getElementById('cert-img-file-input');
 
@@ -2201,7 +2103,6 @@
           });
         }
 
-        // PDF upload
         const pdfDropzone = document.getElementById('cert-pdf-dropzone');
         const pdfFileInput = document.getElementById('cert-pdf-file-input');
         const loadingState = document.getElementById('cert-loading-state');
@@ -2227,7 +2128,6 @@
           });
         }
 
-        // URL preview
         const urlInput = document.getElementById('cert-url-input');
         const urlBtn = document.getElementById('cert-url-preview-btn');
 
@@ -2250,7 +2150,6 @@
       setTimeout(bindCertModalEvents, 50);
     };
 
-    // Standard edit modal helper for skills, education, certifications
     const openEditModal = (cfg, items, idx) => {
       if (sectionKey === 'projects') {
         openProjectModal(items, idx);
@@ -2284,9 +2183,6 @@
     };
   };
 
-  // ============================================================
-  // DEVELOPER PRESENCE EDITOR
-  // ============================================================
   const renderPresence = () => {
     const data = PortfolioData.get('presence');
 
@@ -2344,14 +2240,12 @@
       </div>
     `;
 
-    // Toggles
     data.platforms.forEach((_, i) => {
       document.getElementById(`ptoggle-${i}`)?.addEventListener('change', (e) => {
         data.platforms[i].enabled = e.target.checked;
       });
     });
 
-    // Actions
     document.querySelectorAll('#pres-list .item-action-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.i);
@@ -2408,9 +2302,6 @@
     };
   };
 
-  // ============================================================
-  // GALLERY EDITOR
-  // ============================================================
   const renderGallery = () => {
     const data = PortfolioData.get('gallery');
 
@@ -2506,13 +2397,9 @@
     };
   };
 
-  // ============================================================
-  // HERO VISUAL EDITOR (Typing Animation Snippets)
-  // ============================================================
   const renderHeroVisual = () => {
     const raw = PortfolioData.get('heroVisual') || {};
 
-    // Normalize data with robust defaults
     const header = raw.header || {
       tab1Icon: 'fas fa-camera',
       tab2Icon: 'fas fa-brain',
@@ -2597,8 +2484,7 @@
         ${editedBadge('heroVisual')}
       </div>
 
-      <!-- 1. Window & Tab Bar Header Settings -->
-      <div class="editor-card">
+            <div class="editor-card">
         <div class="editor-card-header"><span class="editor-card-title"><i class="fas fa-window-maximize" style="color:var(--accent);margin-right:8px;"></i> Window Header &amp; Tab Bar</span></div>
         <div class="editor-card-body">
           <div class="field-row">
@@ -2643,8 +2529,7 @@
         </div>
       </div>
 
-      <!-- 2. Developer Profile Card (Primary Snippet) -->
-      <div class="editor-card">
+            <div class="editor-card">
         <div class="editor-card-header" style="justify-content:space-between;">
           <span class="editor-card-title"><i class="fas fa-id-card" style="color:#10b981;margin-right:8px;"></i> Developer Profile Configuration (Primary Card)</span>
           <div style="display:flex;align-items:center;gap:8px;">
@@ -2701,8 +2586,7 @@
         </div>
       </div>
 
-      <!-- 3. Greeting Console Snippet -->
-      <div class="editor-card">
+            <div class="editor-card">
         <div class="editor-card-header" style="justify-content:space-between;">
           <span class="editor-card-title"><i class="fas fa-terminal" style="color:#60a5fa;margin-right:8px;"></i> Console Greeting Snippet</span>
           <div style="display:flex;align-items:center;gap:8px;">
@@ -2739,8 +2623,7 @@
         </div>
       </div>
 
-      <!-- 4. Motivational Quotes -->
-      <div class="editor-card">
+            <div class="editor-card">
         <div class="editor-card-header"><span class="editor-card-title"><i class="fas fa-quote-left" style="color:#f59e0b;margin-right:8px;"></i> Motivational Quotes</span></div>
         <div class="editor-card-body">
           <div class="editor-list" id="hv-mq-list">
@@ -2760,8 +2643,7 @@
         </div>
       </div>
 
-      <!-- 5. Funny Developer Quotes -->
-      <div class="editor-card">
+            <div class="editor-card">
         <div class="editor-card-header"><span class="editor-card-title"><i class="fas fa-face-laugh-beam" style="color:#ec4899;margin-right:8px;"></i> Funny Developer Quotes</span></div>
         <div class="editor-card-body">
           <div class="editor-list" id="hv-fq-list">
@@ -2781,22 +2663,18 @@
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
         <button class="btn-admin btn-cancel" id="hv-reset">Reset to Default</button>
         <button class="btn-admin btn-save" id="hv-save"><i class="fas fa-check"></i> Save &amp; Publish Hero Visual</button>
       </div>
     `;
 
-    // Render initial live preview
     updateLivePreview();
 
-    // Live preview input listeners
     ['hv-am-name', 'hv-am-focus', 'hv-am-loc', 'hv-am-build', 'hv-am-q', 'hv-am-a', 'hv-hdr-logo-text', 'hv-hdr-tab3-text'].forEach(id => {
       document.getElementById(id)?.addEventListener('input', updateLivePreview);
     });
 
-    // Quote toggles
     motQuotes.forEach((_, i) => {
       document.getElementById(`mqt-${i}`)?.addEventListener('change', (e) => { motQuotes[i].enabled = e.target.checked; });
     });
@@ -2804,7 +2682,6 @@
       document.getElementById(`fqt-${i}`)?.addEventListener('change', (e) => { funQuotes[i].enabled = e.target.checked; });
     });
 
-    // Quote deletes
     document.querySelectorAll('[data-action="del-mq"]').forEach(btn => {
       btn.addEventListener('click', () => { motQuotes.splice(parseInt(btn.dataset.i), 1); saveHV(); });
     });
@@ -2812,7 +2689,6 @@
       btn.addEventListener('click', () => { funQuotes.splice(parseInt(btn.dataset.i), 1); saveHV(); });
     });
 
-    // Quote adds
     document.getElementById('hv-add-mq').addEventListener('click', () => {
       motQuotes.push({ text: 'Great things take time. Keep building.', enabled: true });
       saveHV();
@@ -2823,7 +2699,6 @@
     });
 
     const saveHV = async () => {
-      // Gather latest quote texts
       document.querySelectorAll('.mq-text').forEach((el, i) => { if (motQuotes[i]) motQuotes[i].text = el.value.trim(); });
       document.querySelectorAll('.fq-text').forEach((el, i) => { if (funQuotes[i]) funQuotes[i].text = el.value.trim(); });
 
@@ -2876,9 +2751,6 @@
     });
   };
 
-  // ============================================================
-  // CONTACT EDITOR
-  // ============================================================
   const renderContact = () => {
     const data = PortfolioData.get('contact');
     const messages = getMessages();
@@ -3021,7 +2893,6 @@
       });
     });
 
-    // Message actions in contact editor
     document.querySelectorAll('.view-msg-btn-c').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.idx);
@@ -3052,9 +2923,6 @@
     });
   };
 
-  // ============================================================
-  // FOOTER EDITOR
-  // ============================================================
   const renderFooter = () => {
     const data = PortfolioData.get('footer');
 
@@ -3149,9 +3017,6 @@
     };
   };
 
-  // ============================================================
-  // INITIAL RENDER
-  // ============================================================
   fetchMessagesFromBackend().then(() => {
     updateSidebarBadges();
   });

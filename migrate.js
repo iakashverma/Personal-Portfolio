@@ -1,32 +1,7 @@
-/**
- * PORTFOLIO DATA MIGRATION SCRIPT
- * ================================
- * One-time script to seed the Upstash Redis database with existing portfolio data.
- *
- * Usage:
- *   1. Set environment variables (or create a .env file):
- *      UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
- *      UPSTASH_REDIS_REST_TOKEN=AYxxxxxxxxxx
- *
- *   2. Run the migration:
- *      node migrate.js
- *
- *   3. Verify:
- *      The script will confirm successful migration.
- *
- * This script reads from:
- *   - .data/portfolio_data.json (portfolio content)
- *   - .data/messages.json (contact messages)
- *
- * And writes to:
- *   - Upstash Redis key: portfolio_cms_data
- *   - Upstash Redis key: portfolio_contact_messages
- */
 
 const fs = require('fs');
 const path = require('path');
 
-// Load .env file if it exists
 try {
   const envPath = path.join(__dirname, '.env');
   if (fs.existsSync(envPath)) {
@@ -47,7 +22,6 @@ try {
     console.log('✓ Loaded .env file');
   }
 } catch (e) {
-  // .env file is optional
 }
 
 const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -110,7 +84,6 @@ async function migrate() {
   console.log(`📡 Target: ${KV_URL}`);
   console.log('');
 
-  // --- Migrate Portfolio Data ---
   const portfolioPath = path.join(__dirname, '.data', 'portfolio_data.json');
   if (fs.existsSync(portfolioPath)) {
     try {
@@ -133,7 +106,6 @@ async function migrate() {
 
   console.log('');
 
-  // --- Migrate Messages ---
   const messagesPath = path.join(__dirname, '.data', 'messages.json');
   if (fs.existsSync(messagesPath)) {
     try {
@@ -156,7 +128,6 @@ async function migrate() {
 
   console.log('');
 
-  // --- Verify ---
   console.log('🔍 Verifying migration...');
   const verifyData = await loadFromKV('portfolio_cms_data');
   if (verifyData && typeof verifyData === 'object') {

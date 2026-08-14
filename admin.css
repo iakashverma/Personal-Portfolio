@@ -1,11 +1,4 @@
-/* Admin CSS File */
 
-/* ==========================================================================
-   ADMIN PORTAL — STYLE SYSTEM
-   Reuses portfolio design tokens for visual consistency.
-   ========================================================================== */
-
-/* ---------- Design Tokens (same as portfolio) ---------- */
 :root {
   --bg: #0a0a0a;
   --surface: #101010;
@@ -27,7 +20,6 @@
   --sidebar-w: 260px;
 }
 
-/* ---------- Reset ---------- */
 *,
 *::before,
 *::after {
@@ -54,9 +46,6 @@ body {
   font-family: var(--font-mono);
 }
 
-/* ==========================================================================
-   LOGIN PAGE
-   ========================================================================== */
 .admin-login-body {
   display: flex;
   align-items: center;
@@ -245,15 +234,11 @@ body {
   color: var(--text-secondary);
 }
 
-/* ==========================================================================
-   DASHBOARD LAYOUT
-   ========================================================================== */
 .admin-dashboard {
   display: flex;
   min-height: 100vh;
 }
 
-/* --- Sidebar --- */
 .admin-sidebar {
   width: var(--sidebar-w);
   background: var(--surface);
@@ -451,7 +436,6 @@ body {
   color: var(--status-red);
 }
 
-/* --- Mobile Toggle --- */
 .sidebar-toggle {
   display: none;
   position: fixed;
@@ -478,7 +462,6 @@ body {
   z-index: 90;
 }
 
-/* --- Main Content --- */
 .admin-main {
   margin-left: var(--sidebar-w);
   flex: 1;
@@ -512,7 +495,6 @@ body {
   margin-top: 2px;
 }
 
-/* --- Overview Cards --- */
 .overview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -559,9 +541,6 @@ body {
   letter-spacing: 0.06em;
 }
 
-/* ==========================================================================
-   SECTION EDITOR PANELS
-   ========================================================================== */
 .section-panel {
   display: none;
 }
@@ -605,7 +584,6 @@ body {
   gap: 10px;
 }
 
-/* --- Form Fields --- */
 .field-group {
   margin-bottom: 18px;
 }
@@ -662,7 +640,6 @@ body {
   gap: 14px;
 }
 
-/* --- Buttons --- */
 .btn-admin {
   display: inline-flex;
   align-items: center;
@@ -734,7 +711,6 @@ body {
   background: rgba(16, 185, 129, 0.05);
 }
 
-/* --- List Items --- */
 .editor-list {
   display: flex;
   flex-direction: column;
@@ -809,7 +785,6 @@ body {
   border-color: rgba(255, 71, 87, 0.3);
 }
 
-/* --- Toggle Switch --- */
 .toggle-switch {
   position: relative;
   width: 36px;
@@ -853,7 +828,6 @@ body {
   background: #000;
 }
 
-/* --- Toast Notification --- */
 .toast {
   position: fixed;
   bottom: 24px;
@@ -890,7 +864,6 @@ body {
   color: var(--status-red);
 }
 
-/* --- Confirm Dialog --- */
 .confirm-overlay {
   position: fixed;
   inset: 0;
@@ -952,7 +925,6 @@ body {
   justify-content: center;
 }
 
-/* --- Edit Modal --- */
 .edit-modal-overlay {
   position: fixed;
   inset: 0;
@@ -1035,7 +1007,6 @@ body {
   background: var(--surface);
 }
 
-/* --- Edited badge --- */
 .edited-badge {
   display: inline-flex;
   align-items: center;
@@ -1051,11 +1022,6 @@ body {
   letter-spacing: 0.04em;
 }
 
-/* ==========================================================================
-   COMPREHENSIVE RESPONSIVE SYSTEM FOR ADMIN PORTAL
-   ========================================================================== */
-
-/* ---------- Large Tablets / Small Laptops (max-width: 1024px) ---------- */
 @media (max-width: 1024px) {
   .sidebar-toggle {
     display: flex;
@@ -1115,7 +1081,6 @@ body {
   }
 }
 
-/* ---------- Tablets & Small Devices (max-width: 768px) ---------- */
 @media (max-width: 768px) {
   .admin-main {
     padding: 20px 14px;
@@ -1174,13 +1139,11 @@ body {
     min-width: 120px;
   }
 
-  /* List items */
   .editor-list-item {
     padding: 12px 14px;
     gap: 10px;
   }
 
-  /* Modals */
   .edit-modal-overlay {
     padding: 10px;
   }
@@ -1213,7 +1176,6 @@ body {
     min-width: 100px;
   }
 
-  /* Project Image Manager */
   .project-images-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 10px;
@@ -1223,7 +1185,6 @@ body {
     padding: 20px 12px;
   }
 
-  /* Cert Multi-source */
   .cert-source-group {
     flex-direction: column;
     gap: 8px;
@@ -1233,7 +1194,6 @@ body {
     padding: 9px 12px;
   }
 
-  /* Messages Inbox */
   .msg-inbox-card {
     flex-direction: column;
     align-items: stretch;
@@ -1262,7 +1222,6 @@ body {
     justify-content: center;
   }
 
-  /* Resume actions */
   .resume-actions-row {
     flex-direction: column;
     align-items: stretch;
@@ -1277,7 +1236,6 @@ body {
   }
 }
 
-/* ---------- Mobile Phones (max-width: 480px) ---------- */
 @media (max-width: 480px) {
   .sidebar-toggle {
     top: 12px;
@@ -1337,7 +1295,6 @@ body {
     padding: 8px 12px;
   }
 
-  /* List Item Mobile Stacking */
   .editor-list-item {
     flex-direction: column;
     align-items: stretch;
@@ -1351,7 +1308,6 @@ body {
     border-top: 1px solid rgba(255, 255, 255, 0.05);
   }
 
-  /* Image Grid in Mobile */
   .project-images-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
@@ -1367,7 +1323,6 @@ body {
     justify-content: center;
   }
 
-  /* Toast notification */
   .toast {
     left: 10px;
     right: 10px;
@@ -1379,7 +1334,6 @@ body {
     font-size: 12px;
   }
 
-  /* Login page */
   .login-container {
     padding: 12px;
   }
@@ -1413,9 +1367,6 @@ body {
   }
 }
 
-/* ==========================================================================
-   MESSAGES INBOX OVERHAUL STYLING
-   ========================================================================== */
 .msg-inbox-list {
   display: flex;
   flex-direction: column;
@@ -1589,14 +1540,10 @@ body {
   border-color: rgba(239, 68, 68, 0.4);
 }
 
-/* ==========================================================================
-   PROJECT EDITOR MODAL & MEDIA MANAGER STYLES
-   ========================================================================== */
 .project-edit-modal {
   max-width: 760px;
 }
 
-/* --- Domain Multi-Select Pills --- */
 .domain-pills-wrap {
   display: flex;
   flex-wrap: wrap;
@@ -1637,7 +1584,6 @@ body {
   color: #10b981;
 }
 
-/* --- Tech Stack Tag Manager --- */
 .tech-stack-container {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border);
@@ -1716,7 +1662,6 @@ body {
   gap: 8px;
 }
 
-/* --- Project Images Reorderable Manager --- */
 .media-manager-card {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border);
@@ -1841,7 +1786,6 @@ body {
   border-color: rgba(239, 68, 68, 0.4);
 }
 
-/* --- Project Video Manager --- */
 .video-preview-wrapper {
   margin-top: 12px;
   background: #0d0d0d;
@@ -1876,9 +1820,6 @@ body {
   gap: 6px;
 }
 
-/* ==========================================================================
-   CERTIFICATE EDITOR MODAL & MULTI-SOURCE STYLES
-   ========================================================================== */
 .cert-source-group {
   display: flex;
   gap: 10px;
@@ -1979,7 +1920,6 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* --- Hero Visual Admin Preview --- */
 .hv-preview-window {
   background: #0d0e11;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2037,7 +1977,6 @@ body {
 .syn-str { color: #10b981; }
 .syn-fn { color: #60a5fa; }
 
-/* --- Resume Manager in Home Section --- */
 .resume-manager-box {
   background: rgba(255, 255, 255, 0.02);
   border: 1px dashed rgba(255, 255, 255, 0.15);

@@ -1,24 +1,13 @@
-/**
- * PORTFOLIO DATA LAYER — Central Single Source of Truth
- * Connects directly to the production backend API (/api/data).
- * Ensures all admin changes are persisted to the production database and
- * immediately reflected across all devices, browsers, and sessions.
- */
 
 const PortfolioData = (() => {
   const STORAGE_KEY = 'portfolio_cms_data';
   const API_ENDPOINT = '/api/data';
 
-  // Admin API secret — set by the admin dashboard for authenticated write operations
   let adminSecret = '';
 
-  // ============================================================
-  // DEFAULT DATA — Single Source Fallback
-  // ============================================================
 
   const defaults = {
 
-    // ---- HERO ----
     hero: {
       badge: 'Open to work · Full-time & freelance',
       headline: 'Building intelligent<br>systems people<br>actually use.',
@@ -30,7 +19,6 @@ const PortfolioData = (() => {
       ]
     },
 
-    // ---- HERO VISUAL PREVIEW ----
     heroVisual: {
       header: {
         tab1Icon: 'fas fa-camera',
@@ -71,7 +59,6 @@ const PortfolioData = (() => {
       ]
     },
 
-    // ---- ABOUT ----
     about: {
       title: 'About Me',
       subtitle: 'Developer working at the intersection of AI, Data, and Web Engineering.',
@@ -92,7 +79,6 @@ const PortfolioData = (() => {
       ]
     },
 
-    // ---- PROJECTS ----
     projects: {
       title: "Projects I've built",
       subtitle: "Real things I've shipped — from research tools to full-stack apps.",
@@ -156,7 +142,6 @@ const PortfolioData = (() => {
       ]
     },
 
-    // ---- SKILLS ----
     skills: {
       title: 'Technical Skills',
       subtitle: 'Tools, languages, and frameworks I work with to build intelligent software.',
@@ -170,7 +155,6 @@ const PortfolioData = (() => {
       ]
     },
 
-    // ---- EDUCATION ----
     education: {
       title: 'Education',
       subtitle: 'My academic background and computer science degree programs.',
@@ -182,7 +166,6 @@ const PortfolioData = (() => {
       ]
     },
 
-    // ---- CERTIFICATIONS ----
     certifications: {
       title: 'Certifications earned',
       subtitle: 'Verified credentials from industry leaders and top universities.',
@@ -229,7 +212,6 @@ const PortfolioData = (() => {
       ]
     },
 
-    // ---- GALLERY ----
     gallery: [
       { id: 'hackathon', title: 'Tech Hackathon Collaboration', category: 'Hackathons', src: 'images/gallery_hackathon.png', caption: 'Collaborating late night during a competitive hackathon session building real-time prediction pipelines.', enabled: true },
       { id: 'campus', title: 'LPU University Campus Tech Block', category: 'Campus Life', src: 'images/gallery_lpu_campus.png', caption: 'Campus atmosphere at Lovely Professional University, Punjab, pursuing Master of Computer Applications.', enabled: true },
@@ -239,7 +221,6 @@ const PortfolioData = (() => {
       { id: 'code_review', title: 'Technical Architecture & Code Review', category: 'Collaboration', src: 'images/gallery_code_review.png', caption: 'Collaborative code review session focusing on modular system design, database indexing, and API security.', enabled: true }
     ],
 
-    // ---- CONTACT ----
     contact: {
       title: "Let's make it happen.",
       subtitle: 'Connect, collaborate, and turn ideas into something meaningful.',
@@ -256,7 +237,6 @@ const PortfolioData = (() => {
       mapLink: 'https://maps.app.goo.gl/pwJQbptKwbQoBVoH7'
     },
 
-    // ---- FOOTER ----
     footer: {
       description: 'Building intelligent, reliable digital systems at the intersection of AI/ML, Data Science, and Web Engineering.',
       copyright: '© 2026 Akash Verma. All rights reserved.',
@@ -268,7 +248,6 @@ const PortfolioData = (() => {
       ]
     },
 
-    // ---- DEVELOPER PRESENCE ----
     presence: {
       title: 'My Developer Presence',
       subtitle: 'Tracking contributions, problem solving milestones, and technical profiles across the web.',
@@ -283,13 +262,11 @@ const PortfolioData = (() => {
     }
   };
 
-  // In-Memory state for instant rendering
   let memoryData = JSON.parse(JSON.stringify(defaults));
   let isInitialized = false;
   let initPromise = null;
   let isDatabaseConnected = true;
 
-  // Local storage helper
   const loadLocalStorage = () => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -304,13 +281,11 @@ const PortfolioData = (() => {
     } catch (e) { }
   };
 
-  // Pre-load local storage only as transient initial render before backend fetch completes
   const localVal = loadLocalStorage();
   if (localVal) {
     memoryData = { ...memoryData, ...localVal };
   }
 
-  // Safe response parser helper - protects against empty bodies, HTML error pages, and non-JSON responses
   const safeParseResponse = async (res) => {
     let text = '';
     try {
@@ -342,7 +317,6 @@ const PortfolioData = (() => {
         error: null
       };
     } catch (parseErr) {
-      // If the response is HTML or malformed, provide a clean error instead of a syntax crash
       const preview = text.slice(0, 120).replace(/\s+/g, ' ');
       return {
         ok: false,
@@ -355,9 +329,6 @@ const PortfolioData = (() => {
     }
   };
 
-  // ============================================================
-  // BACKEND SYNC LAYER (CENTRAL DATABASE PERSISTENCE)
-  // ============================================================
 
   let activeProvider = 'Local Storage / In-Memory';
 
@@ -396,7 +367,6 @@ const PortfolioData = (() => {
     return initPromise;
   };
 
-  // Auto-trigger init on script load
   init();
 
   const syncToBackend = async (payload) => {
@@ -405,7 +375,6 @@ const PortfolioData = (() => {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       };
-      // Attach admin secret for authenticated write operations
       if (adminSecret) {
         headers['x-admin-secret'] = adminSecret;
       }
@@ -447,9 +416,6 @@ const PortfolioData = (() => {
     }
   };
 
-  // ============================================================
-  // PUBLIC API
-  // ============================================================
 
   const get = (section) => {
     if (memoryData && memoryData[section] !== undefined) {

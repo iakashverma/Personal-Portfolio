@@ -116,7 +116,6 @@ const saveToSupabase = async (key = 'portfolio_contact_messages', msgs) => {
   return false;
 };
 
-// 3. GitHub Gist REST API Adapter
 const loadFromGist = async (filename = 'messages.json') => {
   const gistId = process.env.GITHUB_GIST_ID;
   const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.PORTFOLIO_GITHUB_TOKEN;
@@ -172,7 +171,6 @@ const saveToGist = async (filename = 'messages.json', msgs) => {
   return false;
 };
 
-// 4. JSONBin.io REST API Adapter
 const loadFromJSONBin = async () => {
   const binId = process.env.JSONBIN_MESSAGES_BIN_ID || process.env.JSONBIN_BIN_ID;
   const apiKey = process.env.JSONBIN_API_KEY || process.env.JSONBIN_ACCESS_KEY;
@@ -220,19 +218,15 @@ const saveToJSONBin = async (msgs) => {
 };
 
 const readMessages = async () => {
-  // 1. Try Upstash Redis / Vercel KV
   const kvMsgs = await loadFromKV('portfolio_contact_messages');
   if (Array.isArray(kvMsgs)) return kvMsgs;
 
-  // 2. Try Supabase
   const supaMsgs = await loadFromSupabase('portfolio_contact_messages');
   if (Array.isArray(supaMsgs)) return supaMsgs;
 
-  // 3. Try GitHub Gist
   const gistMsgs = await loadFromGist('messages.json');
   if (Array.isArray(gistMsgs)) return gistMsgs;
 
-  // 4. Try JSONBin
   const binMsgs = await loadFromJSONBin();
   if (Array.isArray(binMsgs)) return binMsgs;
 
@@ -263,7 +257,6 @@ const writeMessages = async (msgs) => {
   } catch (e) {}
 };
 
-// Admin authentication check — validates ADMIN_API_SECRET header
 const isAdminAuthenticated = (req) => {
   const secret = process.env.ADMIN_API_SECRET;
   if (!secret) return true;
@@ -306,7 +299,6 @@ module.exports = async (req, res) => {
       }
 
       if (body.action === 'save_all' && Array.isArray(body.messages)) {
-        // Admin-only operation: requires authentication
         if (!isAdminAuthenticated(req)) {
           return res.status(401).json({ success: false, error: 'Unauthorized — invalid or missing admin secret' });
         }
@@ -334,7 +326,6 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'DELETE') {
-      // Admin-only operation: requires authentication
       if (!isAdminAuthenticated(req)) {
         return res.status(401).json({ success: false, error: 'Unauthorized — invalid or missing admin secret' });
       }

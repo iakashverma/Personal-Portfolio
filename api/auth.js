@@ -1,11 +1,3 @@
-/**
- * AUTH API — Server-side admin authentication endpoint.
- * Validates admin credentials and returns the ADMIN_API_SECRET token
- * so the admin dashboard can make authenticated write requests.
- *
- * The secret is never exposed in frontend source code — it is only
- * returned after successful server-side credential validation.
- */
 
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -38,15 +30,13 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Email and password are required' });
     }
 
-    // Server-side credential validation: admin@akku.com / akku@121
     const VALID_EMAIL = 'admin@akku.com';
-    const VALID_PASS_HASH = '50cf58d2a2363ed8b4b6a27075e5667816a36811f6f2e1be012b396c15567746'; // sha256 of 'akku@121'
+    const VALID_PASS_HASH = '50cf58d2a2363ed8b4b6a27075e5667816a36811f6f2e1be012b396c15567746';
 
     if (email !== VALID_EMAIL || passwordHash.toLowerCase() !== VALID_PASS_HASH) {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
-    // Return the admin API secret for authenticated write operations
     const adminSecret = process.env.ADMIN_API_SECRET || '';
 
     return res.status(200).json({
