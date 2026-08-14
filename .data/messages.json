@@ -1,5 +1,23 @@
 [
   {
+    "id": "_0mh6140wt",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "subject": "Portfolio Inquiry",
+    "message": "Hello Akash!",
+    "date": "Aug 14, 2026, 11:46 AM",
+    "read": false
+  },
+  {
+    "id": "_cx5kx929n",
+    "name": "Dr. Jane Smith",
+    "email": "jane.smith@mit.edu",
+    "subject": "Research Collaboration on Anomaly Detection",
+    "message": "Hello Akash, I reviewed your Detoxa project and would like to discuss potential research collaboration.",
+    "date": "Aug 14, 2026, 11:46 AM",
+    "read": false
+  },
+  {
     "id": "_07o1nfjyf",
     "name": "Dr. Jane Smith",
     "email": "jane.smith@mit.edu",
