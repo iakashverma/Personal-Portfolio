@@ -500,6 +500,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+  const parseDateToSortValue = (dateStr) => {
+    if (!dateStr || typeof dateStr !== 'string') return 0;
+    const s = dateStr.trim();
+    if (!s) return 0;
+
+    // 1. If contains 'present' or 'current', prioritize it as the newest/most recent
+    if (/present|current|now/i.test(s)) {
+      return 9999999999999;
+    }
+
+    // 2. Try standard Date.parse
+    const parsed = Date.parse(s);
+    if (!isNaN(parsed)) {
+      return parsed;
+    }
+
+    // 3. Extract all 4-digit years (e.g. 2026, 2025, 2024, 2023)
+    const years = s.match(/\b(19\d\d|20\d\d)\b/g);
+    if (years && years.length > 0) {
+      const maxYear = Math.max(...years.map(y => parseInt(y, 10)));
+      const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      const lower = s.toLowerCase();
+      let monthIdx = 0;
+      for (let i = 0; i < months.length; i++) {
+        if (lower.includes(months[i])) {
+          monthIdx = i;
+          break;
+        }
+      }
+      return new Date(maxYear, monthIdx, 1).getTime();
+    }
+
+    return 0;
+  };
+
   const renderCMSContent = () => {
     if (typeof PortfolioData !== 'undefined') {
       const data = PortfolioData.getAll();
@@ -569,7 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // --- Projects (Max 6 + Show More toggle) ---
+      // --- Projects (Date Sorted Descending, Max 6 Initial + Show More toggle) ---
       if (data.projects) {
         const projTitle = document.querySelector('#fieldlog .card-section-title');
         if (projTitle && data.projects.title) projTitle.textContent = data.projects.title;
@@ -580,8 +615,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const projectsContainer = document.querySelector('#fieldlog .container');
         if (projectsGrid && data.projects.items && projectsContainer) {
           const enabledProjects = data.projects.items.filter(p => p.enabled !== false);
-          if (enabledProjects.length) {
-            projectsGrid.innerHTML = enabledProjects.map((p, index) => {
+
+          // Dynamic Chronological Sorting: Latest/Newest Date First (2026 -> 2025 -> 2024 -> 2023)
+          const sortedProjects = [...enabledProjects].sort((a, b) => {
+            const dateStrA = a.date || a.year || a.completedDate || (a.description?.match(/\b(19\d\d|20\d\d)\b/)?.[0]) || '';
+            const dateStrB = b.date || b.year || b.completedDate || (b.description?.match(/\b(19\d\d|20\d\d)\b/)?.[0]) || '';
+            const dateA = parseDateToSortValue(dateStrA);
+            const dateB = parseDateToSortValue(dateStrB);
+            return dateB - dateA;
+          });
+
+          if (sortedProjects.length) {
+            projectsGrid.innerHTML = sortedProjects.map((p, index) => {
               // Extract media items: all images first, then video as the final slide
               const images = Array.isArray(p.images) ? p.images : [];
               const hasVideo = Boolean(p.video && String(p.video).trim());
@@ -590,9 +635,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 ...(hasVideo ? [{ type: 'video', src: p.video, caption: 'Project Video Demonstration' }] : [])
               ].filter(item => item && item.src && String(item.src).trim());
 
-              const mainMedia = mediaSlides[0] || null;
+              const mainMedia = mediaSlides[0] || (p.imageUrl ? { type: 'image', src: p.imageUrl } : { type: 'image', src: 'images/gallery_workspace.png' });
 
-              // Extract domain categories & tech stack (clean up legacy 'Web' tag)
+              // Extract domain categories & tech stack
               const rawDomains = Array.isArray(p.domains) && p.domains.length ? p.domains : (p.domain ? [p.domain] : []);
               const domains = [...new Set(rawDomains.map(d => d === 'Web' ? 'Web Development' : d).filter(Boolean))];
               const techStack = Array.isArray(p.techStack) && p.techStack.length ? p.techStack : (Array.isArray(p.tags) ? p.tags : []);
@@ -601,38 +646,32 @@ document.addEventListener('DOMContentLoaded', () => {
               const hasGithub = p.githubUrl && String(p.githubUrl).trim() && p.githubUrl !== '#';
               const hasDemo = p.demoUrl && String(p.demoUrl).trim() && p.demoUrl !== '#';
 
-              let mediaHTML = '';
-              if (mainMedia) {
-                if (mainMedia.type === 'video') {
-                  mediaHTML = `
-                    <div class="project-card-media is-video" data-project-idx="${index}" tabindex="0" role="button" aria-label="View media for ${escHTML(p.title)}">
-                      <video src="${escHTML(mainMedia.src)}" preload="metadata" playsinline></video>
-                      <div class="project-media-hover-overlay">
-                        <i class="fas fa-play"></i> View Project
-                      </div>
+              let hoverMediaContent = '';
+              if (mainMedia.type === 'video') {
+                hoverMediaContent = `
+                  <div class="project-hover-preview-media">
+                    <video src="${escHTML(mainMedia.src)}" preload="metadata" playsinline></video>
+                    <div class="project-hover-preview-badge">
+                      <i class="fas fa-play"></i> View Full Project
                     </div>
-                  `;
-                } else {
-                  mediaHTML = `
-                    <div class="project-card-media" data-project-idx="${index}" tabindex="0" role="button" aria-label="View media for ${escHTML(p.title)}">
-                      <img src="${escHTML(mainMedia.src)}" alt="${escHTML(p.title)}" loading="lazy">
-                      <div class="project-media-hover-overlay">
-                        <i class="fas fa-search-plus"></i> View Project
-                      </div>
-                    </div>
-                  `;
-                }
+                  </div>
+                `;
               } else {
-                mediaHTML = `
-                  <div class="feature-card-icon">
-                    <i class="${escHTML(p.icon || 'fas fa-cube')}"></i>
+                hoverMediaContent = `
+                  <div class="project-hover-preview-media">
+                    <img src="${escHTML(mainMedia.src)}" alt="${escHTML(p.title)}" loading="lazy">
+                    <div class="project-hover-preview-badge">
+                      <i class="fas fa-search-plus"></i> View Full Project
+                    </div>
                   </div>
                 `;
               }
 
               return `
-                <article class="feature-card project-card ${index >= 6 ? 'is-hidden-card' : ''}" data-project-id="${escHTML(p.id)}" tabindex="0">
-                  ${mediaHTML}
+                <article class="feature-card project-card ${index >= 6 ? 'is-hidden-card' : ''}" data-project-index="${index}" tabindex="0" role="button" aria-label="View ${escHTML(p.title)}">
+                  <div class="feature-card-icon">
+                    <i class="${escHTML(p.icon || 'fas fa-cube')}"></i>
+                  </div>
 
                   <h3 class="feature-card-title">${escHTML(p.title)}</h3>
                   <p class="feature-card-desc">${escHTML(p.description)}</p>
@@ -648,52 +687,66 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${hasDemo ? `<a href="${escHTML(p.demoUrl)}" target="_blank" rel="noopener noreferrer" class="btn-project-pill btn-live-deploy"><i class="fas fa-arrow-up-right-from-square"></i> Live Deployment</a>` : ''}
                     ${domains.map(d => `<span class="btn-project-pill project-domain-pill"><i class="fas fa-tag"></i> ${escHTML(d)}</span>`).join('')}
                   </div>
+
+                  <!-- Hover Image Preview (visible only on card hover) -->
+                  <div class="project-card-hover-preview">
+                    ${hoverMediaContent}
+                  </div>
                 </article>
               `;
             }).join('');
 
-            // Bind click on project card media to open full fullscreen/lightbox with all slides
-            projectsGrid.querySelectorAll('.project-card-media').forEach(mediaEl => {
-              const handleOpen = (e) => {
-                e.stopPropagation();
-                const idx = parseInt(mediaEl.getAttribute('data-project-idx'), 10);
-                const proj = enabledProjects[idx];
-                if (!proj) return;
+            // Bind click events on the entire Project card to open Lightbox Image/Video Modal
+            const handleOpenProjectLightbox = (projIndex) => {
+              const proj = sortedProjects[projIndex];
+              if (!proj) return;
 
-                const projImages = Array.isArray(proj.images) ? proj.images : [];
-                const projHasVideo = Boolean(proj.video && String(proj.video).trim());
-                const slides = [
-                  ...projImages.map(img => ({ type: 'image', src: typeof img === 'string' ? img : (img.url || img.src), caption: img.caption || '' })),
-                  ...(projHasVideo ? [{ type: 'video', src: proj.video, caption: 'Project Video Demonstration' }] : [])
-                ].filter(item => item && item.src && String(item.src).trim());
+              const projImages = Array.isArray(proj.images) ? proj.images : [];
+              const projHasVideo = Boolean(proj.video && String(proj.video).trim());
+              let slides = [
+                ...projImages.map(img => ({ type: 'image', src: typeof img === 'string' ? img : (img.url || img.src), caption: img.caption || '' })),
+                ...(projHasVideo ? [{ type: 'video', src: proj.video, caption: 'Project Video Demonstration' }] : [])
+              ].filter(item => item && item.src && String(item.src).trim());
 
-                if (!slides.length) return;
+              if (!slides.length) {
+                slides = [{ type: 'image', src: 'images/gallery_workspace.png', caption: proj.title }];
+              }
 
-                const rawDomains = Array.isArray(proj.domains) && proj.domains.length ? proj.domains : (proj.domain ? [proj.domain] : []);
-                const catText = [...new Set(rawDomains.map(d => d === 'Web' ? 'Web Development' : d).filter(Boolean))].join(' • ') || 'Project Media';
+              const rawDomains = Array.isArray(proj.domains) && proj.domains.length ? proj.domains : (proj.domain ? [proj.domain] : []);
+              const catText = [...new Set(rawDomains.map(d => d === 'Web' ? 'Web Development' : d).filter(Boolean))].join(' • ') || 'Project Media';
 
-                openLightbox({
-                  items: slides,
-                  initialIndex: 0,
-                  title: proj.title,
-                  category: catText,
-                  caption: proj.description || ''
-                });
+              openLightbox({
+                items: slides,
+                initialIndex: 0,
+                title: proj.title,
+                category: catText,
+                caption: proj.description || ''
+              });
+            };
+
+            projectsGrid.querySelectorAll('.project-card').forEach(card => {
+              const openHandler = (e) => {
+                // If clicking an external link, do not open lightbox
+                if (e.target.closest('a')) return;
+                const idx = parseInt(card.getAttribute('data-project-index'), 10);
+                handleOpenProjectLightbox(idx);
               };
 
-              mediaEl.addEventListener('click', handleOpen);
-              mediaEl.addEventListener('keydown', (e) => {
+              card.addEventListener('click', openHandler);
+              card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.target.closest('a')) return;
                   e.preventDefault();
-                  handleOpen(e);
+                  openHandler(e);
                 }
               });
             });
 
+            // Show More / Show Less Toggle (only displayed when more than 6 items exist)
             const oldProjectToggle = projectsContainer.querySelector('.section-toggle-wrapper[data-for="projects"]');
             if (oldProjectToggle) oldProjectToggle.remove();
 
-            if (enabledProjects.length > 6) {
+            if (sortedProjects.length > 6) {
               const toggleWrap = document.createElement('div');
               toggleWrap.className = 'section-toggle-wrapper';
               toggleWrap.setAttribute('data-for', 'projects');
@@ -784,7 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // --- Certifications (Max 6 + Show More toggle) ---
+      // --- Certifications (Date Sorted Descending, Max 6 Initial + Show More toggle) ---
       if (data.certifications) {
         const certTitle = document.querySelector('#certifications .card-section-title');
         if (certTitle && data.certifications.title) certTitle.textContent = data.certifications.title;
@@ -795,95 +848,87 @@ document.addEventListener('DOMContentLoaded', () => {
         const certsContainer = document.querySelector('#certifications .container');
         if (certsGrid && data.certifications.items && certsContainer) {
           const enabledCerts = data.certifications.items.filter(c => c.enabled !== false);
-          if (enabledCerts.length) {
-            certsGrid.innerHTML = enabledCerts.map((c, index) => {
+
+          // Dynamic Chronological Sorting: Latest/Newest Date First (2026 -> 2025 -> 2024 -> 2023)
+          const sortedCerts = [...enabledCerts].sort((a, b) => {
+            const dateStrA = a.issueDate || a.date || a.year || (a.credentialId?.match(/\b(19\d\d|20\d\d)\b/)?.[0]) || '';
+            const dateStrB = b.issueDate || b.date || b.year || (b.credentialId?.match(/\b(19\d\d|20\d\d)\b/)?.[0]) || '';
+            const dateA = parseDateToSortValue(dateStrA);
+            const dateB = parseDateToSortValue(dateStrB);
+            return dateB - dateA;
+          });
+
+          if (sortedCerts.length) {
+            certsGrid.innerHTML = sortedCerts.map((c, index) => {
               const hasImg = Boolean(c.imageUrl && String(c.imageUrl).trim());
+              const imgSource = hasImg ? c.imageUrl : 'images/gallery_ai_presentation.png';
               const org = c.org || '';
-              const date = c.issueDate || '';
+              const date = c.issueDate || c.date || '';
               const credId = c.credentialId || '';
 
               return `
-                <article class="feature-card cert-card ${index >= 6 ? 'is-hidden-card' : ''}" data-cert-index="${index}" tabindex="0">
-                  ${hasImg ? `
-                    <div class="cert-card-media" data-cert-idx="${index}">
-                      <img src="${escHTML(c.imageUrl)}" alt="${escHTML(c.title)}" loading="lazy">
-                      <div class="cert-media-hover-overlay">
-                        <i class="fas fa-search-plus"></i> View Certificate
-                      </div>
-                    </div>
-                  ` : `
-                    <div class="feature-card-icon">
-                      <i class="${escHTML(c.icon || 'fas fa-certificate')}"></i>
-                    </div>
-                  `}
+                <article class="feature-card cert-card ${index >= 6 ? 'is-hidden-card' : ''}" data-cert-index="${index}" tabindex="0" role="button" aria-label="View ${escHTML(c.title)}">
+                  <div class="feature-card-icon">
+                    <i class="${escHTML(c.icon || 'fas fa-certificate')}"></i>
+                  </div>
 
-                  ${(org || date) ? `
-                    <div class="cert-meta-header">
-                      ${org ? `<span class="cert-org-badge"><i class="fas fa-award"></i> ${escHTML(org)}</span>` : ''}
-                      ${date ? `<span class="cert-date-tag">${escHTML(date)}</span>` : ''}
-                    </div>
-                  ` : ''}
+                  <div class="cert-meta-header">
+                    <span class="cert-org-badge"><i class="fas fa-certificate"></i> ${escHTML(org || 'Verified')}</span>
+                    ${date ? `<span class="cert-date-tag">${escHTML(date)}</span>` : ''}
+                  </div>
 
                   <h3 class="feature-card-title">${escHTML(c.title)}</h3>
 
-                  ${credId ? `<div class="cert-id-tag mono">Credential ID: ${escHTML(credId)}</div>` : ''}
-
                   <p class="feature-card-desc">${escHTML(c.description)}</p>
 
-                  <button type="button" class="btn-view-cert" data-cert-idx="${index}" aria-label="View ${escHTML(c.title)}">
-                    <span>View Certificate</span>
-                    <span class="cert-arrow">→</span>
-                  </button>
+                  <!-- Hover Image Preview (visible only on card hover) -->
+                  <div class="cert-card-hover-preview">
+                    <div class="cert-hover-preview-media">
+                      <img src="${escHTML(imgSource)}" alt="${escHTML(c.title)}" loading="lazy">
+                      <div class="cert-hover-preview-badge">
+                        <i class="fas fa-search-plus"></i> View Full Certificate
+                      </div>
+                    </div>
+                  </div>
                 </article>
               `;
             }).join('');
 
-            // Bind click events on "View Certificate" buttons and media banners to open Lightbox Image Modal
+            // Bind click events on the entire Certificate card to open Lightbox Image Modal
             const handleOpenCertLightbox = (certIndex) => {
-              const cert = enabledCerts[certIndex];
+              const cert = sortedCerts[certIndex];
               if (!cert) return;
 
-              if (cert.imageUrl && String(cert.imageUrl).trim()) {
-                openLightbox({
-                  src: cert.imageUrl,
-                  title: cert.title,
-                  category: cert.org || 'Verified Certificate',
-                  date: cert.issueDate || '',
-                  caption: cert.description || ''
-                });
-              } else if (cert.url && String(cert.url).trim() && cert.url !== '#') {
-                window.open(cert.url, '_blank', 'noopener,noreferrer');
-              } else {
-                openLightbox({
-                  src: 'images/gallery_ai_presentation.png',
-                  title: cert.title,
-                  category: cert.org || 'Verified Credential',
-                  date: cert.issueDate || '',
-                  caption: cert.description || 'Verified certificate issued for technical competency.'
-                });
-              }
+              const imgSrc = (cert.imageUrl && String(cert.imageUrl).trim()) ? cert.imageUrl : 'images/gallery_ai_presentation.png';
+              openLightbox({
+                src: imgSrc,
+                title: cert.title,
+                category: cert.org || 'Verified Certificate',
+                date: cert.issueDate || cert.date || '',
+                caption: cert.description || ''
+              });
             };
 
-            certsGrid.querySelectorAll('.btn-view-cert').forEach(btn => {
-              btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const idx = parseInt(btn.getAttribute('data-cert-idx'), 10);
+            certsGrid.querySelectorAll('.cert-card').forEach(card => {
+              const openHandler = (e) => {
+                const idx = parseInt(card.getAttribute('data-cert-index'), 10);
                 handleOpenCertLightbox(idx);
+              };
+
+              card.addEventListener('click', openHandler);
+              card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openHandler(e);
+                }
               });
             });
 
-            certsGrid.querySelectorAll('.cert-card-media').forEach(mediaEl => {
-              mediaEl.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const idx = parseInt(mediaEl.getAttribute('data-cert-idx'), 10);
-                handleOpenCertLightbox(idx);
-              });
-            });
-
+            // Show More / Show Less Toggle (only displayed when more than 6 items exist)
             const oldCertToggle = certsContainer.querySelector('.section-toggle-wrapper[data-for="certifications"]');
             if (oldCertToggle) oldCertToggle.remove();
 
-            if (enabledCerts.length > 6) {
+            if (sortedCerts.length > 6) {
               const toggleWrap = document.createElement('div');
               toggleWrap.className = 'section-toggle-wrapper';
               toggleWrap.setAttribute('data-for', 'certifications');

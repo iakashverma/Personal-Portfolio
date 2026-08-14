@@ -107,9 +107,17 @@
     });
   });
 
-  // Mobile sidebar toggle
+  // Mobile sidebar toggle & close
   const sidebarToggle = document.getElementById('sidebar-toggle');
   const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+
+  const closeSidebar = () => {
+    const sidebar = document.getElementById('admin-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('show');
+  };
 
   if (sidebarToggle) {
     sidebarToggle.addEventListener('click', () => {
@@ -118,12 +126,28 @@
     });
   }
 
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', () => {
-      document.getElementById('admin-sidebar').classList.remove('open');
-      sidebarOverlay.classList.remove('show');
-    });
+  if (sidebarCloseBtn) {
+    sidebarCloseBtn.addEventListener('click', closeSidebar);
   }
+
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', closeSidebar);
+  }
+
+  // Escape key closes modals and mobile sidebar
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeSidebar();
+      const modalOverlay = document.getElementById('edit-modal-overlay');
+      if (modalOverlay && modalOverlay.classList.contains('show')) {
+        modalOverlay.classList.remove('show');
+      }
+      const confirmOverlay = document.getElementById('confirm-overlay');
+      if (confirmOverlay && confirmOverlay.classList.contains('show')) {
+        confirmOverlay.classList.remove('show');
+      }
+    }
+  });
 
   // Logout
   document.getElementById('logout-btn').addEventListener('click', () => {
@@ -1488,6 +1512,10 @@
             <input type="text" class="field-input" id="proj-title" value="${esc(item.title || '')}" placeholder="e.g. Detoxa AI">
           </div>
           <div class="field-group" style="flex:1;">
+            <label class="field-label">Date / Year (e.g. 2025)</label>
+            <input type="text" class="field-input" id="proj-date" value="${esc(item.date || item.year || '')}" placeholder="e.g. 2025 or Jan 2025">
+          </div>
+          <div class="field-group" style="flex:1;">
             <label class="field-label">Icon Class</label>
             <input type="text" class="field-input" id="proj-icon" value="${esc(item.icon || 'fas fa-cube')}" placeholder="fas fa-flask">
           </div>
@@ -1637,6 +1665,7 @@
         }
 
         item.title = titleVal;
+        item.date = (document.getElementById('proj-date')?.value || '').trim();
         item.icon = document.getElementById('proj-icon').value.trim() || 'fas fa-cube';
         item.description = descVal;
         activeDomains = [...new Set(activeDomains.map(d => d === 'Web' ? 'Web Development' : d).filter(Boolean))];
